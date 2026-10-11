@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Kreißsaal-Timer: Geburtszeit festhalten, Apgar nach 1, 5 und 10 Minuten.">
+<meta name="description" content="BirthWatch – Geburtsuhr für den Kreißsaal: Geburtszeit, Apgar nach 1, 5 und 10 Minuten, Notfall-Hilfe Neugeborene.">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#5d7cf7">
 <link rel="manifest" href="manifest.webmanifest">
@@ -11,12 +11,12 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Geburtsuhr">
+<meta name="apple-mobile-web-app-title" content="BirthWatch">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 </head>
 <body>
-<title>Geburtsuhr</title>
+<title>BirthWatch</title>
 <meta name="theme-color" content="#5d7cf7">
 <style>
 /* Layout: Phone = eine Spalte. Ab 900 px (iPad quer) links Uhr + Timer (mitlaufend), rechts die drei Apgar-Karten.
@@ -78,7 +78,7 @@ button{font:inherit}
 
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:.02em}
-.brand svg{width:20px;height:20px}
+.brand-logo{width:30px;height:30px;border-radius:8px;display:block}
 .ghost{appearance:none;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 14px;border-radius:999px;
   border:2px solid var(--rule);background:transparent;color:var(--ink);font-weight:600;font-size:14px;cursor:pointer}
 .ghost svg{width:16px;height:16px}
@@ -288,7 +288,7 @@ body.has-sos .app{padding-bottom:100px}
 
 <div class="app" id="app">
   <header class="topbar">
-    <span class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/></svg>Geburtsuhr</span>
+    <span class="brand"><img src="logo-mark.png" alt="" width="30" height="30" class="brand-logo">BirthWatch</span>
     <button type="button" id="themeBtn" class="ghost" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>Nachtmodus</button>
   </header>
 
@@ -338,8 +338,8 @@ body.has-sos .app{padding-bottom:100px}
           <button type="submit" form="startForm" id="startBtn" class="btn btn-primary btn-wide" disabled>Geburtsvorgang starten</button>
           <button type="button" id="testBtn" class="btn btn-outline btn-wide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>Ton &amp; Ansage testen</button>
           <p id="testMsg" class="note" aria-live="polite"></p>
-          <p id="installHint" class="note" hidden>Ohne Internet nutzen: In Safari auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen (Android: Chrome-Menü → „App installieren“). Danach die Geburtsuhr immer über das neue Symbol öffnen.</p>
-          <p id="offlineNote" class="note" hidden>Offline bereit: Die Geburtsuhr läuft auf diesem Gerät auch ohne Internet.</p>
+          <p id="installHint" class="note" hidden>Ohne Internet nutzen: In Safari auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen (Android: Chrome-Menü → „App installieren“). Danach BirthWatch immer über das neue Symbol öffnen.</p>
+          <p id="offlineNote" class="note" hidden>Offline bereit: BirthWatch läuft auf diesem Gerät auch ohne Internet.</p>
         </div>
 
         <section class="history" aria-labelledby="histTitle">
@@ -1000,7 +1000,7 @@ function checkMilestones(b, now){
 
 /* 3 · Protokoll */
 function protocolText(b){
-  const lines = ['Geburtsuhr – Protokoll', `Geburten-ID: ${b.gid}`, `Kreißsaal: ${b.room}`,
+  const lines = ['BirthWatch – Protokoll', `Geburten-ID: ${b.gid}`, `Kreißsaal: ${b.room}`,
     `Geburt: ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt) + ' Uhr' : '–'}`,
     `Apgar (1/5/10 Min.): ${apgarLine(b)}`, ''];
   for (const m of MS){

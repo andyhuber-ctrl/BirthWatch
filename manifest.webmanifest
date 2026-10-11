@@ -1,13 +1,13 @@
 {
-  "name": "Geburtsuhr",
-  "short_name": "Geburtsuhr",
-  "description": "Kreißsaal-Timer: Geburtszeit festhalten, Apgar nach 1, 5 und 10 Minuten.",
+  "name": "BirthWatch",
+  "short_name": "BirthWatch",
+  "description": "Geburtsuhr für den Kreißsaal: Geburtszeit, Apgar nach 1, 5 und 10 Minuten, Notfall-Hilfe Neugeborene.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#5d7cf7",
+  "background_color": "#f9f6e7",
   "theme_color": "#5d7cf7",
   "icons": [
     {
@@ -23,7 +23,7 @@
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

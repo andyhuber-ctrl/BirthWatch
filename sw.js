@@ -1,6 +1,6 @@
-// Geburtsuhr – Service Worker (automatisch erzeugt von app/baue_web.py)
-const CACHE = 'geburtsuhr-27a8f82c5a';
-const ASSETS = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
+// BirthWatch (Geburtsuhr) – Service Worker (automatisch erzeugt von app/baue_web.py)
+const CACHE = 'geburtsuhr-96943a5dfa';
+const ASSETS = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './logo-mark.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
