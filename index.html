@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="BirthWatch – Geburtsuhr für den Kreißsaal: Geburtszeit, Apgar nach 1, 5 und 10 Minuten, Notfall-Hilfe Neugeborene.">
+<meta name="description" content="BirthWatch – Geburtsuhr für den Kreißsaal: Geburtszeit, APGAR nach 1, 5 und 10 Minuten, Notfall-Hilfe Neugeborene.">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#5d7cf7">
 <link rel="manifest" href="manifest.webmanifest">
@@ -78,7 +78,7 @@ button{font:inherit}
 
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:.02em}
-.brand-logo{width:30px;height:30px;border-radius:8px;display:block}
+.brand-logo{display:block;height:44px;width:auto;border-radius:12px}
 .ghost{appearance:none;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 14px;border-radius:999px;
   border:2px solid var(--rule);background:transparent;color:var(--ink);font-weight:600;font-size:14px;cursor:pointer}
 .ghost svg{width:16px;height:16px}
@@ -230,6 +230,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .voice-msg{margin:0;font-size:14px;color:var(--panel-mute)}
 .voice-msg:empty{display:none}
 .card-hint{margin:0;padding:10px 12px;border-radius:12px;font-size:14px;background:var(--warn-bg);color:var(--warn-ink)}
+.btn-confirm{width:100%;min-height:64px;font-size:20px;background:var(--pick);color:var(--pick-ink);border:2px solid var(--pick)}
+.btn-confirm:disabled{background:transparent;color:var(--panel-mute);border-color:var(--panel-rule);opacity:1}
 
 /* Protokoll */
 .sum-grid{display:grid;gap:22px}
@@ -288,7 +290,7 @@ body.has-sos .app{padding-bottom:100px}
 
 <div class="app" id="app">
   <header class="topbar">
-    <span class="brand"><img src="logo-mark.png" alt="" width="30" height="30" class="brand-logo">BirthWatch</span>
+    <span class="brand"><img src="logo-lockup.png" alt="BirthWatch" width="168" height="44" class="brand-logo"></span>
     <button type="button" id="themeBtn" class="ghost" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>Nachtmodus</button>
   </header>
 
@@ -398,7 +400,7 @@ body.has-sos .app{padding-bottom:100px}
         </div>
 
         <div class="col-side">
-          <div class="side-head"><h2>Apgar</h2><span class="note">je 0–2 Punkte · Summe 0–10</span></div>
+          <div class="side-head"><h2>APGAR</h2><span class="note">je 0–2 Punkte · Summe 0–10</span></div>
           <p id="apgarIntro" class="panel intro">Nach „Geburt erfolgt“ läuft der Timer. Nach 1, 5 und 10 Minuten kommen drei Signaltöne und eine Ansage. Die Werte lassen sich antippen oder einsprechen.</p>
           <div id="cardsBirth" class="cards"></div>
         </div>
@@ -453,7 +455,7 @@ body.has-sos .app{padding-bottom:100px}
       <div class="sum-grid">
         <div class="stack">
           <div class="panel">
-            <span class="label">Apgar 1 / 5 / 10 Min.</span>
+            <span class="label">APGAR 1 / 5 / 10 Min.</span>
             <div id="sApgar" class="apgar-big"></div>
             <dl class="kv">
               <dt>Geburten-ID</dt><dd id="sId"></dd>
@@ -543,10 +545,12 @@ const complete = s => count(s) === 5;
 const band = t => t >= 7 ? {cls:'ok', text:'unauffällig'} : t >= 4 ? {cls:'warn', text:'mäßig auffällig'} : {cls:'crit', text:'kritisch niedrig'};
 const apgarLine = b => MS.map(m => complete(b.apgar[m]) ? total(b.apgar[m]) : '–').join(' / ');
 function applyScores(b, m, vals){
-  Object.assign(b.apgar[m], vals);
-  b.doneAt[m] = complete(b.apgar[m]) ? (b.doneAt[m] || Date.now()) : null;
+  const s = b.apgar[m];
+  if (Object.keys(vals).some(k => s[k] !== vals[k])) b.doneAt[m] = null;   // geänderte Werte müssen neu bestätigt werden
+  Object.assign(s, vals);
   save();
 }
+const confirmed = (b, m) => complete(b.apgar[m]) && !!b.doneAt[m];
 const setScore = (b, m, k, v) => applyScores(b, m, {[k]: v});
 
 /* ---------- Formatierung ---------- */
@@ -714,11 +718,11 @@ function toggleListen(container, m, btn){
     const said = finalText.trim(), parsed = parseApgar(said), n = Object.keys(parsed).length;
     if (!n){ msg.textContent = said ? `„${said}“ – keine Werte erkannt. Bitte noch einmal oder antippen.` : 'Nichts verstanden. Bitte noch einmal versuchen.'; return; }
     const b = byUid(container.dataset.uid); if (!b) return;
-    const was = complete(b.apgar[m]);
     applyScores(b, m, parsed);
     updateCards(container, b); afterScoreChange(b);
-    msg.textContent = `„${said}“ → ${n} von 5 Werten übernommen. Bitte prüfen.`;
-    confirmSpoken(b, m, was, true);
+    const voll = complete(b.apgar[m]);
+    msg.textContent = `„${said}“ → ${n} von 5 Werten übernommen. ` + (voll ? 'Bitte prüfen und bestätigen.' : 'Bitte ergänzen.');
+    say(voll ? `Alle Werte erkannt. Summe ${total(b.apgar[m])}. Bitte prüfen und bestätigen.` : `${count(b.apgar[m])} von 5 Werten erkannt. Bitte ergänzen.`);
   };
   try { r.start(); }
   catch (e) { btn.classList.remove('listening'); lbl.textContent = 'Einsprechen'; rec = null; recBtn = null; msg.textContent = 'Spracheingabe konnte nicht starten. Bitte Werte antippen.'; }
@@ -742,6 +746,7 @@ function cardHTML(m, pfx){
       </div>
       <p class="voice-msg" data-role="vmsg" aria-live="polite"></p>
       <p class="card-hint" data-role="hint" hidden></p>
+      <button type="button" class="btn btn-confirm" data-role="ok" disabled>Werte bestätigen</button>
     </div>
   </article>`;
 }
@@ -756,14 +761,16 @@ function updateCards(container, b){
   for (const card of $$('.card', container)){
     const m = +card.dataset.m, s = b.apgar[m], n = count(s), due = b.bornAt ? b.bornAt + m * 60000 : null;
     let state = 'planned', chip = 'geplant', cls = '';
-    if (n === 5){ const t = total(s), bd = band(t); state = 'done'; chip = `${t} · ${bd.text}`; cls = 'chip-' + bd.cls; }
+    const conf = confirmed(b, m);
+    if (conf){ const t = total(s), bd = band(t); state = 'done'; chip = `${t} · ${bd.text}`; cls = 'chip-' + bd.cls; }
+    else if (n === 5){ state = 'due'; chip = 'bitte bestätigen'; cls = 'chip-due'; }
     else if (due && now >= due && !b.closedAt){ state = 'due'; chip = (m === latestPassed ? 'jetzt erheben' : 'nachtragen') + (n ? ` · ${n}/5` : ''); cls = 'chip-due'; }
     else if (n){ chip = `${n}/5 erfasst`; }
     else if (b.closedAt){ chip = 'nicht erfasst'; }
     else if (!b.bornAt){ chip = 'nach Geburt'; }
     card.dataset.state = state;
     const c = card.querySelector('[data-role=chip]'); setText(c, chip); c.className = 'chip ' + cls;
-    setText(card.querySelector('[data-role=sub]'), !due ? 'startet mit der Geburt' : (n === 5 && b.doneAt[m]) ? 'erfasst ' + fmtHMS(b.doneAt[m]) : 'fällig ' + fmtHMS(due));
+    setText(card.querySelector('[data-role=sub]'), !due ? 'startet mit der Geburt' : conf ? 'bestätigt ' + fmtHMS(b.doneAt[m]) : 'fällig ' + fmtHMS(due));
     for (const o of $$('.opt', card)){
       o.setAttribute('aria-pressed', String(s[o.dataset.k] === +o.dataset.v));
       o.disabled = !b.bornAt;
@@ -773,6 +780,9 @@ function updateCards(container, b){
     hint.hidden = !low;
     if (low) setText(hint, 'Wert unter 7: Laut AAP/ACOG weitere Bewertungen alle 5 Minuten bis 20 Minuten nach der Geburt.');
     const mic = card.querySelector('[data-role=mic]'); mic.hidden = !SR; mic.disabled = !b.bornAt;
+    const ok = card.querySelector('[data-role=ok]');
+    ok.disabled = !b.bornAt || n < 5 || conf;
+    setText(ok, conf ? 'Bestätigt' : n === 5 ? 'Werte bestätigen' : `Noch ${5 - n} ${5 - n === 1 ? 'Wert' : 'Werte'} offen`);
   }
 }
 function openCard(container, m, scroll){
@@ -795,24 +805,29 @@ function onCardsClick(e){
   const opt = e.target.closest('.opt');
   if (opt && !opt.disabled){
     const m = +opt.closest('.card').dataset.m, k = opt.dataset.k, v = +opt.dataset.v;
-    const was = complete(b.apgar[m]), changed = b.apgar[m][k] !== v;
     setScore(b, m, k, v);
     updateCards(container, b); afterScoreChange(b);
-    if (changed) confirmSpoken(b, m, was, false);
     return;
   }
+  const ok = e.target.closest('[data-role=ok]');
+  if (ok && !ok.disabled){ confirmCard(container, b, +ok.closest('.card').dataset.m); return; }
   const mic = e.target.closest('[data-role=mic]');
   if (mic && !mic.disabled) toggleListen(container, +mic.closest('.card').dataset.m, mic);
 }
 $('#cardsBirth').addEventListener('click', onCardsClick);
 $('#cardsSummary').addEventListener('click', onCardsClick);
-// Sprachbestätigung: sobald alle 5 Werte stehen (bzw. bei Korrektur oder nach Spracheingabe)
-function confirmSpoken(b, m, was, viaVoice){
-  const s = b.apgar[m];
-  let text = '';
-  if (complete(s)) text = was ? `Geändert. Summe ${total(s)}.` : `Apgar nach ${m === 1 ? 'einer Minute' : m + ' Minuten'} eingetragen. Summe ${total(s)}.`;
-  else if (viaVoice) text = `${count(s)} von 5 Werten erfasst.`;
-  if (text) say(text);
+// „Werte bestätigen“: Zeit festhalten, Ansage, Karte schließen
+function confirmCard(container, b, m){
+  if (!complete(b.apgar[m]) || b.doneAt[m]) return;
+  b.wasConfirmed = b.wasConfirmed || {};
+  const again = !!b.wasConfirmed[m];
+  b.doneAt[m] = Date.now(); b.wasConfirmed[m] = true; save();
+  say(`Apgar nach ${m === 1 ? 'einer Minute' : m + ' Minuten'} ${again ? 'geändert' : 'eingetragen'}. Summe ${total(b.apgar[m])}.`);
+  const card = $(`.card[data-m="${m}"]`, container);
+  card.querySelector('.card-head').setAttribute('aria-expanded', 'false');
+  card.querySelector('.card-body').hidden = true;
+  updateCards(container, b); afterScoreChange(b);
+  if (window.innerWidth < 900) card.scrollIntoView({block: 'nearest'});
 }
 function afterScoreChange(b){
   updateBanner();
@@ -858,7 +873,7 @@ function renderHistory(){
     btn.type = 'button'; btn.className = 'hist'; btn.dataset.uid = b.uid;
     const id = document.createElement('span'); id.className = 'hist-id'; id.textContent = b.gid;
     const meta = document.createElement('span'); meta.className = 'hist-meta';
-    meta.textContent = `Kreißsaal ${b.room} · ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt).slice(0, 5) : 'vor der Geburt'} · Apgar ${apgarLine(b)}`;
+    meta.textContent = `Kreißsaal ${b.room} · ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt).slice(0, 5) : 'vor der Geburt'} · APGAR ${apgarLine(b)}`;
     const chip = document.createElement('span'); chip.className = 'chip' + (running ? ' chip-due' : ''); chip.textContent = running ? 'läuft' : 'abgeschlossen';
     btn.append(id, meta, chip); li.append(btn); ul.append(li);
   }
@@ -952,7 +967,7 @@ function disarm(btn){
 $('#closeBtn').addEventListener('click', e => {
   const btn = e.currentTarget, b = byUid(viewUid); if (!b) return;
   if (!b.bornAt){ arm(btn, 'Wirklich abbrechen?', () => { removeBirth(b.uid); show('start'); }); return; }
-  const open = MS.filter(m => !complete(b.apgar[m])).length;
+  const open = MS.filter(m => !confirmed(b, m)).length;
   arm(btn, open ? `${open} offen – trotzdem?` : 'Wirklich abschließen?', () => {
     stopListening();
     b.closedAt = Date.now(); if (store.activeUid === b.uid) store.activeUid = null; save();
@@ -962,9 +977,9 @@ $('#closeBtn').addEventListener('click', e => {
 function updateBanner(){
   const ban = $('#banner'), b = view === 'birth' ? byUid(viewUid) : null;
   if (!b || !b.bornAt || b.closedAt){ ban.hidden = true; return; }
-  const el = Date.now() - b.bornAt, m = [...MS].reverse().find(x => el >= x * 60000 && !complete(b.apgar[x]));
+  const el = Date.now() - b.bornAt, m = [...MS].reverse().find(x => el >= x * 60000 && !confirmed(b, x));
   ban.hidden = !m;
-  if (m){ ban.dataset.m = m; setText($('#bannerText'), `${m}. Minute vorbei – Apgar jetzt erheben`); }
+  if (m){ ban.dataset.m = m; setText($('#bannerText'), `${m}. Minute vorbei – APGAR jetzt erheben`); }
 }
 $('#banner').addEventListener('click', e => openCard($('#cardsBirth'), +e.currentTarget.dataset.m, true));
 
@@ -981,7 +996,7 @@ function checkMilestones(b, now){
   save();
   if (view === 'emergency'){                       // im Notfall nicht wegspringen, nur Signal + Hinweis
     if (hit !== null){
-      setText($('#eApgarNote'), `Apgar ${minLabel(hit)} fällig (${fmtHMS(b.bornAt + hit * 60000)}). Nach dem Notfall nachtragen.`);
+      setText($('#eApgarNote'), `APGAR ${minLabel(hit)} fällig (${fmtHMS(b.bornAt + hit * 60000)}). Nach dem Notfall nachtragen.`);
       $('#eApgarNote').hidden = false;
       queueSound(() => beep());
     }
@@ -1002,11 +1017,11 @@ function checkMilestones(b, now){
 function protocolText(b){
   const lines = ['BirthWatch – Protokoll', `Geburten-ID: ${b.gid}`, `Kreißsaal: ${b.room}`,
     `Geburt: ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt) + ' Uhr' : '–'}`,
-    `Apgar (1/5/10 Min.): ${apgarLine(b)}`, ''];
+    `APGAR (1/5/10 Min.): ${apgarLine(b)}`, ''];
   for (const m of MS){
     const s = b.apgar[m];
     const parts = CRIT.map(c => `${c.name} ${s[c.k] != null ? s[c.k] : '–'}`).join(', ');
-    lines.push(`${String(m).padStart(2, ' ')} Min.: ${complete(s) ? total(s) : 'unvollständig'} (${parts})${b.doneAt[m] ? ', erfasst ' + fmtHMS(b.doneAt[m]) : ''}`);
+    lines.push(`${String(m).padStart(2, ' ')} Min.: ${complete(s) ? total(s) + (b.doneAt[m] ? '' : ' (nicht bestätigt)') : 'unvollständig'} (${parts})${confirmed(b, m) ? ', bestätigt ' + fmtHMS(b.doneAt[m]) : ''}`);
   }
   const nf = b.notfall || [];
   if (nf.length) lines.push('', ...nf.map(n => `Notfall (Neugeborenen-Reanimation): ${fmtHMS(n.start)} – ${n.end ? fmtHMS(n.end) + ' Uhr' : 'läuft'}`));
@@ -1031,8 +1046,8 @@ function renderSummaryData(b){
     const r = tb.insertRow(); r.insertCell().textContent = c.name;
     for (const m of MS){ const v = b.apgar[m][c.k]; r.insertCell().textContent = v != null ? v : '–'; }
   }
-  const tr = tb.insertRow(); tr.insertCell().textContent = 'erfasst um';
-  for (const m of MS){ const td = tr.insertCell(); td.className = 't'; td.textContent = b.doneAt[m] ? fmtHMS(b.doneAt[m]).slice(0, 5) : '–'; }
+  const tr = tb.insertRow(); tr.insertCell().textContent = 'bestätigt um';
+  for (const m of MS){ const td = tr.insertCell(); td.className = 't'; td.textContent = confirmed(b, m) ? fmtHMS(b.doneAt[m]).slice(0, 5) : '–'; }
   const tf = tbl.createTFoot().insertRow(); tf.insertCell().textContent = 'Summe';
   for (const m of MS) tf.insertCell().textContent = complete(b.apgar[m]) ? total(b.apgar[m]) : '–';
   $('#protoText').textContent = protocolText(b);

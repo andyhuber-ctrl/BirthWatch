@@ -1,7 +1,7 @@
 {
   "name": "BirthWatch",
   "short_name": "BirthWatch",
-  "description": "Geburtsuhr für den Kreißsaal: Geburtszeit, Apgar nach 1, 5 und 10 Minuten, Notfall-Hilfe Neugeborene.",
+  "description": "Geburtsuhr für den Kreißsaal: Geburtszeit, APGAR nach 1, 5 und 10 Minuten, Notfall-Hilfe Neugeborene.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",
