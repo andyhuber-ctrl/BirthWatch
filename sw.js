@@ -1,5 +1,5 @@
 // Geburtsuhr – Service Worker (automatisch erzeugt von app/baue_web.py)
-const CACHE = 'geburtsuhr-515667a96f';
+const CACHE = 'geburtsuhr-27a8f82c5a';
 const ASSETS = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

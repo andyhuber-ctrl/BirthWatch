@@ -30,6 +30,8 @@
   --due:#ffd84d; --due-ink:#1f1800;
   --ok-bg:#c7f0d6; --ok-ink:#0b4424; --warn-bg:#ffe6a3; --warn-ink:#553a00; --crit-bg:#ffd0d0; --crit-ink:#77121a;
   --focus:#ffffff;
+  --alarm-top:#d42a2a; --alarm-bottom:#9e1515; --alarm-ink:#ffffff; --alarm-ink-2:#ffe3e3; --alarm-deep:#7a0d0d;
+  --sos:#d42a2a; --sos-ink:#ffffff; --sos-edge:#ffffff;
   --font:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -43,6 +45,8 @@
     --due:#ffd84d; --due-ink:#1f1800;
     --ok-bg:#12391f; --ok-ink:#93e6b0; --warn-bg:#3d2d05; --warn-ink:#ffd36b; --crit-bg:#45121a; --crit-ink:#ffadb4;
     --focus:#ffffff;
+    --alarm-top:#8a1414; --alarm-bottom:#4a0909; --alarm-ink:#fff1f1; --alarm-ink-2:#ffc9c9; --alarm-deep:#6b0b0b;
+    --sos:#e03a3a; --sos-ink:#ffffff; --sos-edge:#ff9b9b;
     color-scheme:dark;
   }
 }
@@ -55,6 +59,8 @@
   --due:#ffd84d; --due-ink:#1f1800;
   --ok-bg:#12391f; --ok-ink:#93e6b0; --warn-bg:#3d2d05; --warn-ink:#ffd36b; --crit-bg:#45121a; --crit-ink:#ffadb4;
   --focus:#ffffff;
+  --alarm-top:#8a1414; --alarm-bottom:#4a0909; --alarm-ink:#fff1f1; --alarm-ink-2:#ffc9c9; --alarm-deep:#6b0b0b;
+  --sos:#e03a3a; --sos-ink:#ffffff; --sos-edge:#ff9b9b;
   color-scheme:dark;
 }
 
@@ -245,6 +251,38 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
 .foot{margin:8px 0 0;font-size:13px;color:var(--ink-2);text-align:center;text-wrap:balance}
 
+/* Notfall-Leiste + Notfall-Modus (roter Hintergrund) */
+body.alarm{--sky-top:var(--alarm-top);--sky-bottom:var(--alarm-bottom);--ink:var(--alarm-ink);--ink-2:var(--alarm-ink-2);
+  --rule:rgba(255,255,255,.45);--track:rgba(255,255,255,.25);--btn:var(--alarm-ink);--btn-ink:var(--alarm-deep)}
+.sos-bar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:center;
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px));background:var(--sky-bottom);box-shadow:0 -6px 18px rgba(0,0,0,.18)}
+.sos{appearance:none;width:100%;max-width:520px;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:60px;
+  border-radius:999px;border:2px solid var(--sos-edge);background:var(--sos);color:var(--sos-ink);font-weight:800;font-size:21px;
+  letter-spacing:.02em;cursor:pointer;touch-action:manipulation}
+.sos svg{width:24px;height:24px}
+body.has-sos .app{padding-bottom:100px}
+.e-source{margin:-8px 0 0;font-size:14px;color:var(--ink-2)}
+.e-clocks{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.e-clock{display:flex;flex-direction:column;gap:2px}
+.e-clock b{font-size:clamp(40px,12vw,76px);line-height:1;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.e-cycle{display:flex;flex-direction:column;gap:8px}
+.e-toggle{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;cursor:pointer}
+.e-toggle input{width:20px;height:20px;accent-color:var(--alarm-ink)}
+.e-current{display:flex;flex-direction:column;gap:6px;padding:20px;border-radius:24px;background:var(--alarm-ink);color:var(--alarm-deep)}
+.e-stepno{font-size:15px;font-weight:700}
+.e-current h2{font-size:clamp(26px,7vw,34px);line-height:1.1}
+.e-current ul{margin:4px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:18px;line-height:1.4}
+.e-nav{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.e-next{grid-column:1 / -1;min-height:84px;font-size:clamp(24px,6.5vw,30px);font-weight:800}
+.e-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.e-step{appearance:none;width:100%;display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:16px;border:2px solid var(--rule);
+  background:transparent;color:var(--ink);font-weight:700;font-size:17px;text-align:left;cursor:pointer}
+.e-no{display:inline-grid;place-items:center;flex:none;width:30px;height:30px;border-radius:50%;border:2px solid currentColor;font-size:15px;font-weight:800}
+.e-step.current{background:var(--alarm-ink);border-color:var(--alarm-ink);color:var(--alarm-deep)}
+.e-step.done{opacity:.6}
+.e-spo2 td{text-align:left}
+.e-spo2 tr.now td{color:var(--due);font-weight:800}
+
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 
@@ -367,6 +405,47 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       </div>
     </section>
 
+    <!-- Notfall · Neugeborenen-Reanimation -->
+    <section id="screen-emergency" class="screen" aria-labelledby="eTitle" hidden>
+      <div class="meta-row"><span id="eMeta"></span><span class="status">Notfall</span></div>
+      <h1 id="eTitle">Neugeborenen-Reanimation</h1>
+      <p class="e-source">Gedächtnisstütze nach ERC-Leitlinie 2025. Klinikstandard und Ausbildung haben Vorrang.</p>
+      <div class="birth-grid">
+        <div class="col-main">
+          <div class="e-clocks">
+            <div class="e-clock"><span class="timer-label">Seit Notfall</span><b id="eTimer">00 : 00</b></div>
+            <div class="e-clock"><span class="timer-label">Seit Geburt</span><b id="eSince">–</b></div>
+          </div>
+          <button type="button" id="eBornBtn" class="btn btn-outline btn-wide" hidden>Geburtszeit jetzt setzen</button>
+          <div class="e-cycle">
+            <p id="eCycleText" class="next"></p>
+            <div class="bar" aria-hidden="true"><span id="eCycleFill"></span></div>
+            <label class="e-toggle" for="eTick"><input type="checkbox" id="eTick" checked>Signalton alle 30 Sekunden</label>
+          </div>
+          <p id="eApgarNote" class="sound-note" hidden></p>
+          <div class="e-current" aria-live="polite">
+            <span id="eStepNo" class="e-stepno"></span>
+            <h2 id="eStepTitle"></h2>
+            <ul id="eStepDetail"></ul>
+          </div>
+          <div class="e-nav">
+            <button type="button" id="eNext" class="btn btn-primary e-next">Nächster Schritt</button>
+            <button type="button" id="ePrev" class="btn btn-outline">Zurück</button>
+            <button type="button" id="eRepeat" class="btn btn-outline">Wiederholen</button>
+          </div>
+          <button type="button" id="eEndBtn" class="btn btn-outline btn-wide">Notfall beenden</button>
+        </div>
+        <div class="col-side">
+          <h2>Alle Schritte</h2>
+          <ol id="eSteps" class="e-steps"></ol>
+          <div class="panel">
+            <span class="label">Ziel-Sättigung präduktal (rechte Hand)</span>
+            <table class="scores e-spo2"><tbody id="eSpo2"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 3 · Protokoll -->
     <section id="screen-summary" class="screen" aria-labelledby="sTitle" hidden>
       <div class="meta-row"><span id="sMeta"></span><span class="status">Abgeschlossen</span></div>
@@ -381,6 +460,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
               <dt>Kreißsaal</dt><dd id="sRoom"></dd>
               <dt>Geburt</dt><dd id="sBorn"></dd>
               <dt>Abgeschlossen</dt><dd id="sClosed"></dd>
+              <dt id="sSosL" hidden>Notfall</dt><dd id="sSos" hidden></dd>
             </dl>
           </div>
           <div class="panel table-wrap"><table id="sTable" class="scores"></table></div>
@@ -402,6 +482,10 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       </div>
     </section>
   </main>
+
+  <div id="sosBar" class="sos-bar" hidden>
+    <button type="button" id="sosBtn" class="sos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20.5h20L12 3z"/><path d="M12 10v4.5M12 17.5v.5"/></svg>Notfall</button>
+  </div>
 
   <p class="foot">Hilfsmittel zur Zeitkontrolle. Ersetzt weder die klinische Beurteilung noch die Dokumentation. Daten bleiben auf diesem Gerät.</p>
 </div>
@@ -498,27 +582,27 @@ function pickVoice(){
   } catch (e) {}
 }
 if ('speechSynthesis' in window){ pickVoice(); try { speechSynthesis.addEventListener('voiceschanged', pickVoice); } catch (e) {} }
-function beep3(){
+function beep(n = 3, f = 1175){
   return new Promise(res => {
     if (!actx){ res(); return; }
     try {
       if (actx.state !== 'running') actx.resume();
       const t0 = actx.currentTime + 0.06;
-      for (let i = 0; i < 3; i++){
+      for (let i = 0; i < n; i++){
         const s = t0 + i * 0.34, g = actx.createGain();
         g.connect(actx.destination);
         g.gain.setValueAtTime(0.0001, s);
         g.gain.exponentialRampToValueAtTime(0.75, s + 0.012);
         g.gain.setValueAtTime(0.75, s + 0.17);
         g.gain.exponentialRampToValueAtTime(0.0001, s + 0.22);
-        [1175, 2350].forEach((f, j) => {
+        [f, f * 2].forEach((hz, j) => {
           const o = actx.createOscillator(), og = actx.createGain();
-          o.type = 'sine'; o.frequency.value = f; og.gain.value = j ? 0.25 : 1;
+          o.type = 'sine'; o.frequency.value = hz; og.gain.value = j ? 0.25 : 1;
           o.connect(og); og.connect(g); o.start(s); o.stop(s + 0.24);
         });
       }
     } catch (e) {}
-    setTimeout(res, 1150);
+    setTimeout(res, n * 340 + 130);
   });
 }
 function say(text){
@@ -630,9 +714,11 @@ function toggleListen(container, m, btn){
     const said = finalText.trim(), parsed = parseApgar(said), n = Object.keys(parsed).length;
     if (!n){ msg.textContent = said ? `„${said}“ – keine Werte erkannt. Bitte noch einmal oder antippen.` : 'Nichts verstanden. Bitte noch einmal versuchen.'; return; }
     const b = byUid(container.dataset.uid); if (!b) return;
+    const was = complete(b.apgar[m]);
     applyScores(b, m, parsed);
     updateCards(container, b); afterScoreChange(b);
     msg.textContent = `„${said}“ → ${n} von 5 Werten übernommen. Bitte prüfen.`;
+    confirmSpoken(b, m, was, true);
   };
   try { r.start(); }
   catch (e) { btn.classList.remove('listening'); lbl.textContent = 'Einsprechen'; rec = null; recBtn = null; msg.textContent = 'Spracheingabe konnte nicht starten. Bitte Werte antippen.'; }
@@ -708,8 +794,11 @@ function onCardsClick(e){
   }
   const opt = e.target.closest('.opt');
   if (opt && !opt.disabled){
-    setScore(b, +opt.closest('.card').dataset.m, opt.dataset.k, +opt.dataset.v);
+    const m = +opt.closest('.card').dataset.m, k = opt.dataset.k, v = +opt.dataset.v;
+    const was = complete(b.apgar[m]), changed = b.apgar[m][k] !== v;
+    setScore(b, m, k, v);
     updateCards(container, b); afterScoreChange(b);
+    if (changed) confirmSpoken(b, m, was, false);
     return;
   }
   const mic = e.target.closest('[data-role=mic]');
@@ -717,6 +806,14 @@ function onCardsClick(e){
 }
 $('#cardsBirth').addEventListener('click', onCardsClick);
 $('#cardsSummary').addEventListener('click', onCardsClick);
+// Sprachbestätigung: sobald alle 5 Werte stehen (bzw. bei Korrektur oder nach Spracheingabe)
+function confirmSpoken(b, m, was, viaVoice){
+  const s = b.apgar[m];
+  let text = '';
+  if (complete(s)) text = was ? `Geändert. Summe ${total(s)}.` : `Apgar nach ${m === 1 ? 'einer Minute' : m + ' Minuten'} eingetragen. Summe ${total(s)}.`;
+  else if (viaVoice) text = `${count(s)} von 5 Werten erfasst.`;
+  if (text) say(text);
+}
 function afterScoreChange(b){
   updateBanner();
   if (view === 'summary' && viewUid === b.uid) renderSummaryData(b);
@@ -727,9 +824,12 @@ let view = 'start', viewUid = null;
 function show(name, uid){
   view = name; viewUid = uid || null;
   for (const s of $$('.screen')) s.hidden = s.id !== 'screen-' + name;
+  document.body.classList.toggle('alarm', name === 'emergency');
   if (name === 'start') renderStart();
   if (name === 'birth') renderBirth();
   if (name === 'summary') renderSummary();
+  if (name === 'emergency') renderEmergency();
+  updateSos();
   window.scrollTo(0, 0);
   tick();
 }
@@ -790,7 +890,7 @@ $('#testBtn').addEventListener('click', () => {
   if (!actx) parts.push('Signalton wird von diesem Browser nicht unterstützt.');
   if (!('speechSynthesis' in window)) parts.push('Sprachausgabe wird von diesem Browser nicht unterstützt.');
   $('#testMsg').textContent = parts.length ? parts.join(' ') : 'Drei Töne, dann eine Ansage. Am iPhone den Stummschalter prüfen und die Lautstärke hochdrehen.';
-  queueSound(async () => { await beep3(); await wait(300); await say('Ton und Ansage funktionieren.'); });
+  queueSound(async () => { await beep(); await wait(300); await say('Ton und Ansage funktionieren.'); });
 });
 
 /* 2 · Geburtsvorgang */
@@ -879,6 +979,14 @@ function checkMilestones(b, now){
   }
   if (!changed) return;
   save();
+  if (view === 'emergency'){                       // im Notfall nicht wegspringen, nur Signal + Hinweis
+    if (hit !== null){
+      setText($('#eApgarNote'), `Apgar ${minLabel(hit)} fällig (${fmtHMS(b.bornAt + hit * 60000)}). Nach dem Notfall nachtragen.`);
+      $('#eApgarNote').hidden = false;
+      queueSound(() => beep());
+    }
+    return;
+  }
   if (hit !== null && (view !== 'birth' || viewUid !== b.uid)) show('birth', b.uid);
   if (view === 'birth' && viewUid === b.uid){ updateCards($('#cardsBirth'), b); updateBanner(); }
   if (hit !== null){
@@ -886,7 +994,7 @@ function checkMilestones(b, now){
     const app = $('#app'); app.classList.remove('alerting'); void app.offsetWidth; app.classList.add('alerting');
     setTimeout(() => app.classList.remove('alerting'), 2200);
     stopListening();
-    queueSound(async () => { await beep3(); await wait(350); await say(ANSAGE(hit)); });
+    queueSound(async () => { await beep(); await wait(350); await say(ANSAGE(hit)); });
   }
 }
 
@@ -900,6 +1008,8 @@ function protocolText(b){
     const parts = CRIT.map(c => `${c.name} ${s[c.k] != null ? s[c.k] : '–'}`).join(', ');
     lines.push(`${String(m).padStart(2, ' ')} Min.: ${complete(s) ? total(s) : 'unvollständig'} (${parts})${b.doneAt[m] ? ', erfasst ' + fmtHMS(b.doneAt[m]) : ''}`);
   }
+  const nf = b.notfall || [];
+  if (nf.length) lines.push('', ...nf.map(n => `Notfall (Neugeborenen-Reanimation): ${fmtHMS(n.start)} – ${n.end ? fmtHMS(n.end) + ' Uhr' : 'läuft'}`));
   if (b.closedAt) lines.push('', `Abgeschlossen: ${fmtDate(b.closedAt)}, ${fmtHMS(b.closedAt)} Uhr`);
   return lines.join('\n');
 }
@@ -910,6 +1020,9 @@ function renderSummaryData(b){
   $('#sRoom').textContent = 'Kreißsaal ' + b.room;
   $('#sBorn').textContent = b.bornAt ? `${fmtLong(b.bornAt)}, ${fmtHMS(b.bornAt)} Uhr` : '–';
   $('#sClosed').textContent = b.closedAt ? `${fmtDate(b.closedAt)}, ${fmtHMS(b.closedAt)} Uhr` : '–';
+  const nf = b.notfall || [];
+  $('#sSosL').hidden = $('#sSos').hidden = !nf.length;
+  $('#sSos').textContent = nf.map(n => `${fmtHMS(n.start)} – ${n.end ? fmtHMS(n.end) : 'läuft'}`).join(', ');
   const tbl = $('#sTable'); tbl.textContent = '';
   const thead = tbl.createTHead(), hr = thead.insertRow();
   ['Kriterium', '1 Min.', '5 Min.', '10 Min.'].forEach(h => { const th = document.createElement('th'); th.scope = 'col'; th.textContent = h; hr.append(th); });
@@ -955,6 +1068,126 @@ $('#deleteBtn').addEventListener('click', e => {
   arm(e.currentTarget, 'Wirklich löschen?', () => { removeBirth(b.uid); show('start'); });
 });
 
+/* ---------- Notfall: Neugeborenen-Reanimation (ERC-Leitlinie 2025, Gedächtnisstütze) ---------- */
+const NOTFALL = [
+  {t:'Hilfe rufen', d:['Hilfe rufen (Neonatologie / Kinderarzt).', 'Uhr läuft ab jetzt, Zeiten oben im Blick behalten.', 'Muss reanimiert werden: innerhalb von 30 s abnabeln.'],
+   s:'Notfall. Neugeborenen-Reanimation. Hilfe rufen. Wenn reanimiert werden muss, innerhalb von dreißig Sekunden abnabeln.'},
+  {t:'Wärmen und stimulieren', d:['Abtrocknen, nasse Tücher entfernen, warm einwickeln, Mütze.', 'Sanft stimulieren.', 'Unter 32 SSW: ohne Abtrocknen in Folie oder Beutel unter Wärme.'],
+   s:'Abtrocknen, warm einwickeln, Mütze aufsetzen und sanft stimulieren. Frühgeborene unter zweiunddreißig Wochen ohne Abtrocknen in Folie.'},
+  {t:'Beurteilen', d:['Muskeltonus, Atmung, Herzfrequenz (Stethoskop, Sättigung präduktal an der rechten Hand, EKG wenn vorhanden).', 'Keine ausreichende Atmung oder HF unter 100/min: Atemwege öffnen und beatmen.'],
+   s:'Muskeltonus, Atmung und Herzfrequenz beurteilen. Sättigung an die rechte Hand. Atmet das Kind nicht ausreichend oder liegt die Herzfrequenz unter hundert: Atemwege öffnen und beatmen.'},
+  {t:'Atemwege öffnen', d:['Kopf in Neutralposition.', 'Unterkiefer vorziehen (Esmarch), wenn möglich zu zweit.', 'Maske dicht aufsetzen.'],
+   s:'Kopf in Neutralposition. Unterkiefer vorziehen, wenn möglich zu zweit. Maske dicht aufsetzen.'},
+  {t:'5 Blähbeatmungen', d:['Je 2–3 Sekunden.', 'Druck: 30 cm H₂O ab 32 SSW, 25 cm H₂O unter 32 SSW.', 'Sauerstoff: 21 % ab 32 SSW, mindestens 30 % unter 32 SSW.'],
+   s:'Fünf Blähbeatmungen, je zwei bis drei Sekunden. Druck dreißig Zentimeter Wassersäule, unter zweiunddreißig Wochen fünfundzwanzig. Raumluft, unter zweiunddreißig Wochen mindestens dreißig Prozent Sauerstoff.'},
+  {t:'Neu beurteilen', d:['Hebt sich der Brustkorb? Steigt die Herzfrequenz?', 'Kein Heben: Maske neu anlegen, Atemweg zu zweit, bei Verlegung absaugen, Larynxmaske erwägen, Druck in kleinen Schritten erhöhen.', 'Danach Blähbeatmungen wiederholen.'],
+   s:'Hebt sich der Brustkorb, steigt die Herzfrequenz? Wenn sich der Brustkorb nicht hebt: Maske neu anlegen, Atemweg zu zweit sichern, bei Verlegung absaugen, Larynxmaske erwägen, Druck schrittweise erhöhen. Dann die Blähbeatmungen wiederholen.'},
+  {t:'Beatmen, 30 pro Minute', d:['Brustkorb hebt sich: weiter beatmen, 30/min (15 in 30 s), Inspiration ca. 1 s.', 'Alle 30 s Herzfrequenz prüfen.', 'Sauerstoff nach präduktaler Sättigung anpassen.', 'Weiter, bis das Kind ausreichend atmet und die HF über 100/min liegt.'],
+   s:'Weiter beatmen, dreißig pro Minute. Alle dreißig Sekunden die Herzfrequenz prüfen. Sauerstoff nach der Sättigung anpassen.'},
+  {t:'HF unter 60: Herzdruckmassage', d:['HF nach mind. 30 s effektiver Beatmung unter 60/min: Thoraxkompressionen.', '3 : 1, also 90 Kompressionen und 30 Beatmungen pro Minute.', 'Tiefe ein Drittel des Brustkorbs, Zwei-Daumen-Technik.', 'Sauerstoff auf 100 %. Erfahrene Hilfe holen.'],
+   s:'Liegt die Herzfrequenz nach dreißig Sekunden effektiver Beatmung unter sechzig: Herzdruckmassage, drei zu eins. Sauerstoff auf hundert Prozent. Erfahrene Hilfe holen.'},
+  {t:'Atemweg sichern, Zugang legen', d:['HF bleibt unter 60/min: Atemweg sichern (Larynxmaske oder Tubus), Kompressionen möglichst ohne Pause.', 'Nabelvenenkatheter, sonst intraossärer Zugang.', 'Alle 30 s Herzfrequenz prüfen.'],
+   s:'Bleibt die Herzfrequenz unter sechzig: Atemweg sichern, Nabelvenenkatheter oder intraossären Zugang legen. Herzdruckmassage möglichst ohne Pause.'},
+  {t:'Medikamente erwägen', d:['Adrenalin 20 µg/kg i. v. oder i. o. (Leitlinie 10–30 µg/kg), alle 4 Minuten, solange HF unter 60/min.', 'Verdacht auf Blutverlust: Volumen 10 ml/kg (0 Rh-negativ-Blut oder isotone Lösung).', 'Dosierung nach Klinikstandard.'],
+   s:'Adrenalin erwägen, Richtwert zwanzig Mikrogramm pro Kilogramm, alle vier Minuten, solange die Herzfrequenz unter sechzig liegt. Bei Blutverlust Volumen, zehn Milliliter pro Kilogramm.'},
+  {t:'Andere Ursachen bedenken', d:['Pneumothorax, Hypovolämie, angeborene Fehlbildung, Gerätefehler.'],
+   s:'An andere Ursachen denken: Pneumothorax, Volumenmangel, Fehlbildung, Gerätefehler.'},
+];
+const SPO2 = [[3, '3 Minuten', '70–75 %'], [5, '5 Minuten', '80–85 %'], [10, '10 Minuten', '85–95 %']];
+let eCycle = -1;
+const openNotfall = b => (b && (b.notfall || []).find(n => !n.end)) || null;
+function updateSos(){
+  const on = !!active() && (view === 'start' || view === 'birth');
+  $('#sosBar').hidden = !on;
+  document.body.classList.toggle('has-sos', on);
+}
+function startEmergency(){
+  const a = active(); if (!a) return;
+  unlockAudio(); stopListening();
+  if (!a.notfall) a.notfall = [];
+  let n = openNotfall(a);
+  if (!n){ n = {start: Date.now(), end: null, step: 0}; a.notfall.push(n); }
+  save();
+  show('emergency', a.uid);
+  keepAwake();
+  say(NOTFALL[n.step].s);
+}
+$('#sosBtn').addEventListener('click', startEmergency);
+function buildSteps(){
+  const ol = $('#eSteps');
+  NOTFALL.forEach((st, i) => {
+    const li = document.createElement('li'), btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'e-step'; btn.dataset.i = i;
+    const no = document.createElement('span'); no.className = 'e-no'; no.textContent = i + 1;
+    const tt = document.createElement('span'); tt.textContent = st.t;
+    btn.append(no, tt); li.append(btn); ol.append(li);
+  });
+  const tb = $('#eSpo2');
+  for (const [m, label, ziel] of SPO2){
+    const tr = tb.insertRow(); tr.dataset.m = m;
+    tr.insertCell().textContent = label; tr.insertCell().textContent = ziel;
+  }
+}
+function renderEmergency(){
+  const b = byUid(viewUid), n = openNotfall(b);
+  if (!n){ show(b ? 'birth' : 'start', b ? b.uid : null); return; }
+  if (!$('#eSteps').children.length) buildSteps();
+  $('#eMeta').textContent = `Geb.-ID ${b.gid} · Kreißsaal ${b.room}`;
+  $('#eApgarNote').hidden = true;
+  disarm($('#eEndBtn'));
+  eCycle = Math.floor((Date.now() - n.start) / 30000);
+  renderStep(n.step);
+}
+function renderStep(i){
+  const st = NOTFALL[i];
+  setText($('#eStepNo'), `Schritt ${i + 1} von ${NOTFALL.length}`);
+  setText($('#eStepTitle'), st.t);
+  const ul = $('#eStepDetail'); ul.textContent = '';
+  for (const d of st.d){ const li = document.createElement('li'); li.textContent = d; ul.append(li); }
+  for (const btn of $$('.e-step')){
+    const j = +btn.dataset.i;
+    btn.classList.toggle('current', j === i); btn.classList.toggle('done', j < i);
+    if (j === i) btn.setAttribute('aria-current', 'step'); else btn.removeAttribute('aria-current');
+  }
+  $('#ePrev').disabled = i === 0;
+  $('#eNext').disabled = i === NOTFALL.length - 1;
+}
+function goStep(i){
+  const n = openNotfall(byUid(viewUid)); if (!n) return;
+  n.step = Math.max(0, Math.min(NOTFALL.length - 1, i)); save();
+  renderStep(n.step); say(NOTFALL[n.step].s);
+  if (window.innerWidth < 900) $('.e-current').scrollIntoView({block: 'start'});
+}
+$('#eNext').addEventListener('click', () => { const n = openNotfall(byUid(viewUid)); if (n) goStep(n.step + 1); });
+$('#ePrev').addEventListener('click', () => { const n = openNotfall(byUid(viewUid)); if (n) goStep(n.step - 1); });
+$('#eRepeat').addEventListener('click', () => { const n = openNotfall(byUid(viewUid)); if (n) say(NOTFALL[n.step].s); });
+$('#eSteps').addEventListener('click', e => { const btn = e.target.closest('.e-step'); if (btn) goStep(+btn.dataset.i); });
+$('#eBornBtn').addEventListener('click', () => {
+  const b = byUid(viewUid); if (!b || b.bornAt) return;
+  b.bornAt = Date.now(); b.announced = {1:false, 5:false, 10:false}; save();
+  say('Geburtszeit erfasst.'); tick();
+});
+$('#eEndBtn').addEventListener('click', e => {
+  arm(e.currentTarget, 'Wirklich beenden?', () => {
+    const b = byUid(viewUid), n = openNotfall(b);
+    if (n){ n.end = Date.now(); save(); }
+    say('Notfall beendet. Die Zeiten stehen im Protokoll.');
+    show(b ? 'birth' : 'start', b ? b.uid : null);
+  });
+});
+function tickEmergency(now){
+  const b = byUid(viewUid), n = openNotfall(b); if (!n) return;
+  const el = now - n.start, cyc = Math.floor(el / 30000);
+  setText($('#eTimer'), fmtDur(el, true));
+  setText($('#eSince'), b.bornAt ? fmtDur(now - b.bornAt, true) : '–');
+  $('#eBornBtn').hidden = !!b.bornAt;
+  $('#eCycleFill').style.transform = `scaleX(${(el % 30000) / 30000})`;
+  setText($('#eCycleText'), `Nächste Herzfrequenz-Kontrolle in ${Math.ceil((30000 - el % 30000) / 1000)} s`);
+  if (cyc > eCycle){ eCycle = cyc; if ($('#eTick').checked) beep(1, 880); }
+  const mins = b.bornAt ? (now - b.bornAt) / 60000 : -1, cur = [...SPO2].reverse().find(([m]) => mins >= m);
+  for (const tr of $$('#eSpo2 tr')) tr.classList.toggle('now', !!cur && +tr.dataset.m === cur[0]);
+}
+
 /* ---------- Takt ---------- */
 let lastSec = -1;
 function tick(){
@@ -975,7 +1208,7 @@ function tick(){
       const next = MS.find(m => el < m * 60000), prev = next ? (MS[MS.indexOf(next) - 1] || 0) : 10;
       const frac = next ? (el - prev * 60000) / ((next - prev) * 60000) : 1;
       $('#barFill').style.transform = `scaleX(${Math.min(1, Math.max(0, frac))})`;
-      $('.bar').setAttribute('aria-valuenow', String(Math.round(frac * 100)));
+      $('#barFill').parentElement.setAttribute('aria-valuenow', String(Math.round(frac * 100)));
       setText($('#nextLine'), next ? `Nächste Bewertung: ${minLabel(next)} · um ${fmtHMS(b.bornAt + next * 60000)} · in ${fmtDur(next * 60000 - el)}`
                                    : 'Alle drei Bewertungszeitpunkte erreicht. Der Timer läuft weiter.');
       $('#undoBtn').hidden = !(el < 60000 && !MS.some(m => count(b.apgar[m])));
@@ -984,6 +1217,7 @@ function tick(){
     }
     $('#soundNote').hidden = !(b && b.bornAt && !b.closedAt && (!actx || actx.state !== 'running'));
   }
+  if (view === 'emergency') tickEmergency(now);
   if (view === 'start' && a){
     setText($('#resumeMeta'), `Kreißsaal ${a.room} · ` + (a.bornAt ? 'seit Geburt ' + fmtDur(now - a.bornAt) : 'wartet auf Geburt'));
   }
@@ -1028,7 +1262,7 @@ document.addEventListener('keydown', () => unlockAudio());
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible'){ if (active()) keepAwake(); tick(); } });
 load();
 const a0 = active();
-if (a0) show('birth', a0.uid); else show('start');
+if (a0 && openNotfall(a0)) show('emergency', a0.uid); else if (a0) show('birth', a0.uid); else show('start');
 setInterval(tick, 250);
 })();
 </script>
