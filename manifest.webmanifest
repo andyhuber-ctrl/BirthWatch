@@ -1,0 +1,32 @@
+{
+  "name": "Geburtsuhr",
+  "short_name": "Geburtsuhr",
+  "description": "Kreißsaal-Timer: Geburtszeit festhalten, Apgar nach 1, 5 und 10 Minuten.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#5d7cf7",
+  "theme_color": "#5d7cf7",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

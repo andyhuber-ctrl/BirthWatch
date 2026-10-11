@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Kreißsaal-Timer: Geburtszeit festhalten, Apgar nach 1, 5 und 10 Minuten.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#5d7cf7">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Geburtsuhr">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<title>Geburtsuhr</title>
+<meta name="theme-color" content="#5d7cf7">
+<style>
+/* Layout: Phone = eine Spalte. Ab 900 px (iPad quer) links Uhr + Timer (mitlaufend), rechts die drei Apgar-Karten.
+   Look nach Vorlage: Himmelblau-Verlauf, fast schwarze Schrift, dunkle Karten, Pillen-Buttons. Nachtmodus = gedimmtes Nachtblau. */
+:root{
+  --sky-top:#5d7cf7; --sky-bottom:#8a96f5;
+  --ink:#0d1122; --ink-2:#151a38; --rule:rgba(13,17,34,.28); --track:rgba(13,17,34,.16);
+  --panel:#171a26; --panel-edge:rgba(23,26,38,0); --panel-ink:#eef0f9; --panel-mute:#a2a8c3; --panel-rule:rgba(238,240,249,.16);
+  --pick:#7b95ff; --pick-ink:#0b0f1f;
+  --btn:#0d1122; --btn-ink:#f4f6ff;
+  --due:#ffd84d; --due-ink:#1f1800;
+  --ok-bg:#c7f0d6; --ok-ink:#0b4424; --warn-bg:#ffe6a3; --warn-ink:#553a00; --crit-bg:#ffd0d0; --crit-ink:#77121a;
+  --focus:#ffffff;
+  --font:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --sky-top:#111a3d; --sky-bottom:#0a0f27;
+    --ink:#dfe5ff; --ink-2:#a9b3dc; --rule:rgba(223,229,255,.26); --track:rgba(223,229,255,.14);
+    --panel:#060914; --panel-edge:rgba(223,229,255,.10); --panel-ink:#e7eaf6; --panel-mute:#8890b0; --panel-rule:rgba(231,234,246,.13);
+    --pick:#6683f7; --pick-ink:#050816;
+    --btn:#8ea3ff; --btn-ink:#070b1c;
+    --due:#ffd84d; --due-ink:#1f1800;
+    --ok-bg:#12391f; --ok-ink:#93e6b0; --warn-bg:#3d2d05; --warn-ink:#ffd36b; --crit-bg:#45121a; --crit-ink:#ffadb4;
+    --focus:#ffffff;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --sky-top:#111a3d; --sky-bottom:#0a0f27;
+  --ink:#dfe5ff; --ink-2:#a9b3dc; --rule:rgba(223,229,255,.26); --track:rgba(223,229,255,.14);
+  --panel:#060914; --panel-edge:rgba(223,229,255,.10); --panel-ink:#e7eaf6; --panel-mute:#8890b0; --panel-rule:rgba(231,234,246,.13);
+  --pick:#6683f7; --pick-ink:#050816;
+  --btn:#8ea3ff; --btn-ink:#070b1c;
+  --due:#ffd84d; --due-ink:#1f1800;
+  --ok-bg:#12391f; --ok-ink:#93e6b0; --warn-bg:#3d2d05; --warn-ink:#ffd36b; --crit-bg:#45121a; --crit-ink:#ffadb4;
+  --focus:#ffffff;
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--sky-top);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-bottom) 100%)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+button{font:inherit}
+
+.app{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:12px 28px;display:flex;flex-direction:column;gap:18px}
+@media (min-width:600px){.app{padding-inline:28px}}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:.02em}
+.brand svg{width:20px;height:20px}
+.ghost{appearance:none;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 14px;border-radius:999px;
+  border:2px solid var(--rule);background:transparent;color:var(--ink);font-weight:600;font-size:14px;cursor:pointer}
+.ghost svg{width:16px;height:16px}
+.ghost[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--sky-top)}
+
+.screen{display:flex;flex-direction:column;gap:18px}
+.meta-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:17px;font-weight:600}
+.meta-row span:first-child{min-width:0;overflow-wrap:anywhere}
+.status{font-weight:700;white-space:nowrap}
+h1{margin:-10px 0 0;font-size:clamp(32px,8vw,44px);line-height:1.05;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+h2{margin:0;font-size:21px;font-weight:800;letter-spacing:-.01em}
+.stack{display:flex;flex-direction:column;gap:14px;min-width:0}
+.center{text-align:center}
+.note{margin:0;font-size:14px;color:var(--ink-2)}
+.note:empty{display:none}
+
+/* Buttons */
+.btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:60px;padding:12px 22px;
+  border-radius:999px;font-weight:700;font-size:19px;line-height:1.15;text-align:center;cursor:pointer;touch-action:manipulation;
+  transition:transform .08s ease,background-color .15s ease,color .15s ease}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn svg{width:20px;height:20px;flex:none}
+.btn-primary{background:var(--btn);color:var(--btn-ink);border:2px solid var(--btn)}
+.btn-outline{background:transparent;color:var(--ink);border:2px solid var(--ink)}
+.btn-pick{background:var(--pick);color:var(--pick-ink);border:2px solid var(--pick);min-height:52px;font-size:17px}
+.btn-wide{width:100%}
+.btn-born{width:100%;min-height:108px;font-size:clamp(28px,7.5vw,36px);font-weight:800;letter-spacing:-.01em}
+.btn-sm{min-height:48px;font-size:16px;padding:8px 16px}
+.btn.armed{background:var(--crit-bg);border-color:var(--crit-bg);color:var(--crit-ink)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.actions .btn{font-size:17px;padding-inline:14px}
+.link{appearance:none;background:none;border:0;padding:6px 0;color:var(--ink);font-weight:600;font-size:15px;
+  text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+/* Panels + Formular */
+.panel{background:var(--panel);color:var(--panel-ink);border:1px solid var(--panel-edge);border-radius:24px;padding:20px}
+.form{display:flex;flex-direction:column;gap:20px}
+.label{display:block;margin:0 0 6px;font-size:15px;font-weight:700;color:var(--panel-mute)}
+.label-ink{display:block;font-size:15px;font-weight:700;color:var(--ink-2)}
+.field{width:100%;background:transparent;border:0;border-bottom:2px solid var(--panel-rule);border-radius:0;color:var(--panel-ink);
+  font:700 30px/1.2 var(--font);letter-spacing:.01em;padding:6px 0 10px}
+.field::placeholder{color:var(--panel-mute);opacity:.55;font-weight:600}
+.field:focus{outline:none;border-bottom-color:var(--pick)}
+.hint{margin:0;font-size:14px;color:var(--panel-mute)}
+.warn{margin:8px 0 0;padding:10px 12px;border-radius:12px;font-size:14px;background:var(--warn-bg);color:var(--warn-ink)}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+.rooms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.room{position:relative}
+.room input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.room label{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:80px;
+  border:2px solid var(--panel-rule);border-radius:18px;font-weight:800;font-size:32px;line-height:1;cursor:pointer;touch-action:manipulation}
+.room label small{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--panel-mute)}
+.room input:checked + label{background:var(--pick);border-color:var(--pick);color:var(--pick-ink)}
+.room input:checked + label small{color:var(--pick-ink)}
+.room input:focus-visible + label{outline:3px solid var(--focus);outline-offset:3px}
+
+.start-grid{display:grid;gap:24px}
+@media (min-width:900px){.start-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start}}
+.resume{display:flex;flex-direction:column;gap:6px;border-color:var(--due)}
+.resume-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.resume-info{display:flex;flex-direction:column;min-width:0}
+.resume-info strong{font-size:24px;font-weight:800;overflow-wrap:anywhere}
+.resume-info span{font-size:14px;color:var(--panel-mute);font-variant-numeric:tabular-nums}
+
+.history{display:flex;flex-direction:column;gap:12px}
+.hist-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.hist{appearance:none;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;text-align:left;
+  padding:12px 16px;border-radius:18px;border:2px solid var(--rule);background:transparent;color:var(--ink);cursor:pointer}
+.hist-id{font-weight:800;font-size:18px;overflow-wrap:anywhere}
+.hist-meta{grid-column:1;font-size:14px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.hist .chip{grid-column:2;grid-row:1 / span 2}
+
+/* Chips */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;
+  background:var(--track);color:var(--ink)}
+.card .chip{background:var(--panel-rule);color:var(--panel-ink)}
+.chip.chip-due,.card .chip.chip-due{background:var(--due);color:var(--due-ink)}
+.chip.chip-ok,.card .chip.chip-ok{background:var(--ok-bg);color:var(--ok-ink)}
+.chip.chip-warn,.card .chip.chip-warn{background:var(--warn-bg);color:var(--warn-ink)}
+.chip.chip-crit,.card .chip.chip-crit{background:var(--crit-bg);color:var(--crit-ink)}
+
+/* Uhr + Timer */
+.birth-grid{display:grid;gap:22px}
+.col-main{display:flex;flex-direction:column;gap:18px;min-width:0}
+.col-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (min-width:900px){
+  .birth-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+  .col-main{position:sticky;top:16px}
+}
+.clock{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.date{font-size:16px;font-weight:600;color:var(--ink-2)}
+.time{display:flex;align-items:flex-start;justify-content:center;font-weight:800;font-size:clamp(64px,21vw,124px);line-height:.95;
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.time .sec{font-size:.32em;margin:.2em 0 0 .14em;letter-spacing:0;color:var(--ink-2)}
+.clock.compact .time{font-size:clamp(48px,14vw,84px)}
+.since{display:flex;flex-direction:column;gap:10px}
+.born-line{margin:0;text-align:center;font-size:16px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.born-line strong{color:var(--ink)}
+.timer-label{margin-top:6px;font-size:16px;font-weight:700;color:var(--ink-2)}
+.timer{font-weight:800;font-size:clamp(72px,23vw,150px);line-height:.9;letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.timer.long{font-size:clamp(52px,16vw,110px)}
+.bar{height:12px;border-radius:999px;background:var(--track);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--ink);border-radius:inherit;transform-origin:left center;transform:scaleX(0);transition:transform .25s linear}
+.next{margin:0;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.links{display:flex;gap:18px;flex-wrap:wrap}
+.adjust{display:flex;flex-direction:column;gap:8px}
+.adjust-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.time-input{min-height:48px;padding:8px 14px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--ink);
+  font:700 20px var(--font);font-variant-numeric:tabular-nums}
+.banner{appearance:none;display:flex;align-items:center;gap:12px;width:100%;padding:14px 18px;border-radius:18px;border:2px solid var(--due);
+  background:var(--panel);color:var(--due);font-weight:800;font-size:19px;line-height:1.2;text-align:left;cursor:pointer}
+.banner svg{width:22px;height:22px;flex:none}
+.sound-note{margin:0;padding:10px 14px;border-radius:14px;background:var(--due);color:var(--due-ink);font-size:15px;font-weight:600}
+@keyframes nudge{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.alerting .timer{animation:nudge .5s ease-in-out 4}
+
+/* Apgar-Karten */
+.side-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.intro{margin:0;font-size:15px;color:var(--panel-mute)}
+.cards{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);color:var(--panel-ink);border:2px solid var(--panel-edge);border-radius:24px;overflow:hidden}
+.card[data-state="due"]{border-color:var(--due)}
+.card-head{appearance:none;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"title chip chev" "sub chip chev";
+  align-items:center;gap:2px 12px;padding:16px 18px;background:transparent;border:0;color:inherit;text-align:left;cursor:pointer}
+.card-title{grid-area:title;font-size:22px;font-weight:800;letter-spacing:-.01em}
+.card-sub{grid-area:sub;font-size:14px;color:var(--panel-mute);font-variant-numeric:tabular-nums}
+.card-head .chip{grid-area:chip}
+.chev{grid-area:chev;width:22px;height:22px;color:var(--panel-mute);transition:transform .2s ease}
+.card-head[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.card-body{display:flex;flex-direction:column;gap:16px;padding:16px 18px 18px;border-top:1px solid var(--panel-rule)}
+.crit-name{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-weight:700;font-size:16px}
+.crit-letter{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--panel-rule);font-size:14px;font-weight:800}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.opt{appearance:none;display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:76px;padding:10px 12px;border-radius:16px;
+  border:2px solid var(--panel-rule);background:transparent;color:var(--panel-ink);text-align:left;cursor:pointer;touch-action:manipulation}
+.opt b{font-size:24px;line-height:1;font-weight:800}
+.opt span{font-size:13px;line-height:1.25;color:var(--panel-mute);overflow-wrap:break-word;hyphens:manual}
+.opt[aria-pressed="true"]{background:var(--pick);border-color:var(--pick);color:var(--pick-ink)}
+.opt[aria-pressed="true"] span{color:var(--pick-ink)}
+.opt:disabled{opacity:.4;cursor:not-allowed}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sum{display:flex;align-items:baseline;gap:6px}
+.sum b{font-size:42px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
+.sum-label{font-size:15px;font-weight:700;color:var(--panel-mute)}
+.sum-max{font-weight:700;color:var(--panel-mute)}
+.btn-mic{min-height:52px;font-size:17px;background:transparent;color:var(--panel-ink);border:2px solid var(--panel-ink)}
+.btn-mic.listening{background:var(--due);border-color:var(--due);color:var(--due-ink)}
+.voice-msg{margin:0;font-size:14px;color:var(--panel-mute)}
+.voice-msg:empty{display:none}
+.card-hint{margin:0;padding:10px 12px;border-radius:12px;font-size:14px;background:var(--warn-bg);color:var(--warn-ink)}
+
+/* Protokoll */
+.sum-grid{display:grid;gap:22px}
+@media (min-width:900px){.sum-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
+.apgar-big{font-size:clamp(44px,13vw,68px);line-height:1;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:2px 0 18px}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;margin:0}
+.kv dt{font-size:14px;font-weight:600;color:var(--panel-mute)}
+.kv dd{margin:0;font-weight:700;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.table-wrap{overflow-x:auto;padding-block:8px}
+.scores{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.scores th,.scores td{padding:10px 8px;text-align:center;border-bottom:1px solid var(--panel-rule)}
+.scores th:first-child,.scores td:first-child{text-align:left}
+.scores thead th{font-size:14px;font-weight:700;color:var(--panel-mute)}
+.scores tbody td:first-child{font-weight:600}
+.scores tfoot td{font-size:20px;font-weight:800;border-bottom:0}
+.scores .t{font-size:13px;font-weight:600;color:var(--panel-mute)}
+.proto{margin:0;padding:16px;border-radius:18px;background:var(--panel);color:var(--panel-ink);border:1px solid var(--panel-edge);
+  font:500 14px/1.55 var(--mono);white-space:pre-wrap;overflow-x:auto;-webkit-user-select:text;user-select:text}
+
+.foot{margin:8px 0 0;font-size:13px;color:var(--ink-2);text-align:center;text-wrap:balance}
+
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app" id="app">
+  <header class="topbar">
+    <span class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/></svg>Geburtsuhr</span>
+    <button type="button" id="themeBtn" class="ghost" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>Nachtmodus</button>
+  </header>
+
+  <main>
+    <!-- 1 · Geburt anlegen -->
+    <section id="screen-start" class="screen" aria-labelledby="startTitle">
+      <div class="meta-row"><span>Schritt 1 von 2</span><span class="status">Bereit</span></div>
+      <h1 id="startTitle">Geburt anlegen</h1>
+
+      <div class="start-grid">
+        <div class="stack">
+          <div id="updateBox" class="panel resume" hidden>
+            <span class="label">Neue Version verfügbar</span>
+            <div class="resume-row">
+              <span class="hint">Gespeicherte Geburten bleiben erhalten.</span>
+              <button type="button" id="updateBtn" class="btn btn-pick">Jetzt aktualisieren</button>
+            </div>
+          </div>
+
+          <div id="resumeBox" class="panel resume" hidden>
+            <span class="label">Laufende Geburt</span>
+            <div class="resume-row">
+              <div class="resume-info"><strong id="resumeId"></strong><span id="resumeMeta"></span></div>
+              <button type="button" id="resumeBtn" class="btn btn-pick">Fortsetzen</button>
+            </div>
+          </div>
+
+          <form id="startForm" class="panel form" novalidate autocomplete="off">
+            <div>
+              <label class="label" for="gid">Geburten-ID</label>
+              <input id="gid" name="gid" class="field" type="text" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="24" placeholder="z. B. 26-0412" required>
+              <p id="gidWarn" class="warn" hidden>Das sieht nach einem Namen aus. Bitte nur die interne Geburten-ID eintragen.</p>
+            </div>
+            <fieldset>
+              <legend class="label">Kreißsaal</legend>
+              <div class="rooms">
+                <div class="room"><input type="radio" name="room" id="room1" value="1"><label for="room1"><small>Saal</small>1</label></div>
+                <div class="room"><input type="radio" name="room" id="room2" value="2"><label for="room2"><small>Saal</small>2</label></div>
+                <div class="room"><input type="radio" name="room" id="room3" value="3"><label for="room3"><small>Saal</small>3</label></div>
+                <div class="room"><input type="radio" name="room" id="room4" value="4"><label for="room4"><small>Saal</small>4</label></div>
+              </div>
+            </fieldset>
+            <p class="hint">Keine Namen oder Geburtsdaten der Mutter. Alle Angaben bleiben auf diesem Gerät.</p>
+            <p id="replaceNote" class="warn" hidden>Die laufende Geburt <b id="replaceId"></b> wird beim Start abgeschlossen.</p>
+          </form>
+
+          <button type="submit" form="startForm" id="startBtn" class="btn btn-primary btn-wide" disabled>Geburtsvorgang starten</button>
+          <button type="button" id="testBtn" class="btn btn-outline btn-wide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>Ton &amp; Ansage testen</button>
+          <p id="testMsg" class="note" aria-live="polite"></p>
+          <p id="installHint" class="note" hidden>Ohne Internet nutzen: In Safari auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen (Android: Chrome-Menü → „App installieren“). Danach die Geburtsuhr immer über das neue Symbol öffnen.</p>
+          <p id="offlineNote" class="note" hidden>Offline bereit: Die Geburtsuhr läuft auf diesem Gerät auch ohne Internet.</p>
+        </div>
+
+        <section class="history" aria-labelledby="histTitle">
+          <h2 id="histTitle">Auf diesem Gerät</h2>
+          <ul id="historyList" class="hist-list"></ul>
+          <p id="historyEmpty" class="note">Noch keine Geburten gespeichert.</p>
+          <p class="note">Abgeschlossene Geburten werden nach 7 Tagen automatisch gelöscht.</p>
+        </section>
+      </div>
+    </section>
+
+    <!-- 2 · Geburtsvorgang -->
+    <section id="screen-birth" class="screen" aria-labelledby="bTitle" hidden>
+      <div class="meta-row"><span id="bMeta"></span><span id="bStatus" class="status"></span></div>
+      <h1 id="bTitle"></h1>
+      <button type="button" id="banner" class="banner" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9.5"/></svg><span id="bannerText"></span></button>
+      <p id="soundNote" class="sound-note" hidden>Einmal auf den Bildschirm tippen, damit Signalton und Ansage funktionieren.</p>
+
+      <div class="birth-grid">
+        <div class="col-main">
+          <div class="clock">
+            <div id="date" class="date"></div>
+            <div class="time" aria-label="Uhrzeit"><span id="hm">--:--</span><span id="ss" class="sec">--</span></div>
+          </div>
+
+          <div id="preBirth" class="stack">
+            <button type="button" id="bornBtn" class="btn btn-primary btn-born">Geburt erfolgt</button>
+            <p class="note center">Im Moment der Geburt antippen. Datum und Uhrzeit werden sekundengenau vermerkt.</p>
+          </div>
+
+          <div id="postBirth" class="since" hidden>
+            <p class="born-line">Geburt am <span id="bornDate"></span> um <strong id="bornAt"></strong> Uhr</p>
+            <div class="timer-label">Seit Geburt</div>
+            <div id="timer" class="timer" role="timer">00 : 00</div>
+            <div class="bar" role="progressbar" aria-label="Zeit bis zur nächsten Bewertung" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="barFill"></span></div>
+            <p id="nextLine" class="next"></p>
+            <div class="links">
+              <button type="button" id="undoBtn" class="link" hidden>Rückgängig (versehentlich getippt)</button>
+              <button type="button" id="adjustBtn" class="link">Geburtszeit korrigieren</button>
+            </div>
+            <form id="adjustForm" class="adjust" hidden>
+              <label for="adjustTime" class="label-ink">Tatsächliche Geburtszeit</label>
+              <div class="adjust-row">
+                <input id="adjustTime" type="time" step="1" class="time-input" required>
+                <button type="submit" class="btn btn-primary btn-sm">Übernehmen</button>
+                <button type="button" id="adjustCancel" class="btn btn-outline btn-sm">Abbrechen</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="actions">
+            <button type="button" id="backBtn" class="btn btn-outline">Zurück</button>
+            <button type="button" id="closeBtn" class="btn btn-outline">Abschließen</button>
+          </div>
+          <p id="wakeNote" class="note"></p>
+        </div>
+
+        <div class="col-side">
+          <div class="side-head"><h2>Apgar</h2><span class="note">je 0–2 Punkte · Summe 0–10</span></div>
+          <p id="apgarIntro" class="panel intro">Nach „Geburt erfolgt“ läuft der Timer. Nach 1, 5 und 10 Minuten kommen drei Signaltöne und eine Ansage. Die Werte lassen sich antippen oder einsprechen.</p>
+          <div id="cardsBirth" class="cards"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 · Protokoll -->
+    <section id="screen-summary" class="screen" aria-labelledby="sTitle" hidden>
+      <div class="meta-row"><span id="sMeta"></span><span class="status">Abgeschlossen</span></div>
+      <h1 id="sTitle">Protokoll</h1>
+      <div class="sum-grid">
+        <div class="stack">
+          <div class="panel">
+            <span class="label">Apgar 1 / 5 / 10 Min.</span>
+            <div id="sApgar" class="apgar-big"></div>
+            <dl class="kv">
+              <dt>Geburten-ID</dt><dd id="sId"></dd>
+              <dt>Kreißsaal</dt><dd id="sRoom"></dd>
+              <dt>Geburt</dt><dd id="sBorn"></dd>
+              <dt>Abgeschlossen</dt><dd id="sClosed"></dd>
+            </dl>
+          </div>
+          <div class="panel table-wrap"><table id="sTable" class="scores"></table></div>
+        </div>
+        <div class="stack">
+          <span class="label-ink">Text für die Dokumentation</span>
+          <pre id="protoText" class="proto"></pre>
+          <div class="actions">
+            <button type="button" id="copyBtn" class="btn btn-primary">Kopieren</button>
+            <button type="button" id="editBtn" class="btn btn-outline" aria-expanded="false" aria-controls="cardsSummary">Werte bearbeiten</button>
+          </div>
+          <p id="copyMsg" class="note" aria-live="polite"></p>
+          <div id="cardsSummary" class="cards" hidden></div>
+          <div class="actions">
+            <button type="button" id="newBtn" class="btn btn-outline">Neue Geburt</button>
+            <button type="button" id="deleteBtn" class="btn btn-outline">Löschen</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <p class="foot">Hilfsmittel zur Zeitkontrolle. Ersetzt weder die klinische Beurteilung noch die Dokumentation. Daten bleiben auf diesem Gerät.</p>
+</div>
+
+<script>
+(function(){
+'use strict';
+document.documentElement.lang = 'de';
+
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const KEY = 'geburtsuhr.v1', THEME_KEY = 'geburtsuhr.theme', KEEP_DAYS = 7;
+const MS = [1, 5, 10];
+const CRIT = [
+  {k:'at', letter:'A', name:'Atmung',     opts:['keine', 'unregel\u00admäßig, flach', 'regel\u00admäßig, kräftiges Schreien']},
+  {k:'pu', letter:'P', name:'Puls',       opts:['kein Puls', 'unter 100/min', '100/min und mehr']},
+  {k:'to', letter:'G', name:'Grundtonus', opts:['schlaff', 'leichte Beugung', 'aktive Bewegung']},
+  {k:'ha', letter:'A', name:'Aussehen',   opts:['blau oder blass', 'Stamm rosig, Extremi\u00adtäten blau', 'vollständig rosig']},
+  {k:'re', letter:'R', name:'Reflexe',    opts:['keine Reaktion', 'Grimas\u00adsieren', 'Schreien, Husten, Niesen']},
+];
+const ORD = {1:'Erste', 5:'Fünfte', 10:'Zehnte'};
+const ANSAGE = m => `${ORD[m]} Minute ${m === 1 ? 'seit' : 'nach'} der Geburt ist vorbei. Jetzt bitte folgende Werte nehmen: ` +
+  'Atmung, Puls, Grundtonus, Aussehen und Reflexe. Je null bis zwei Punkte.';
+const MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+const CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+
+/* ---------- Speicher (nur lokal auf dem Gerät) ---------- */
+let store = {births: [], activeUid: null};
+function load(){
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (s && Array.isArray(s.births)) store = {births: s.births, activeUid: s.activeUid || null};
+  } catch (e) {}
+  const cut = Date.now() - KEEP_DAYS * 864e5;
+  store.births = store.births.filter(b => !b.closedAt || b.closedAt > cut).slice(-40);
+  if (store.activeUid && !byUid(store.activeUid)) store.activeUid = null;
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+const byUid = uid => store.births.find(b => b.uid === uid) || null;
+const active = () => { const b = store.activeUid && byUid(store.activeUid); return b && !b.closedAt ? b : null; };
+function newBirth(gid, room){
+  return {uid: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), gid, room, createdAt: Date.now(),
+    bornAt: null, closedAt: null, apgar: {1:{}, 5:{}, 10:{}}, doneAt: {1:null, 5:null, 10:null}, announced: {1:false, 5:false, 10:false}};
+}
+function removeBirth(uid){
+  store.births = store.births.filter(b => b.uid !== uid);
+  if (store.activeUid === uid) store.activeUid = null;
+  save();
+}
+
+/* ---------- Apgar-Rechnung ---------- */
+const count = s => CRIT.filter(c => s[c.k] != null).length;
+const total = s => CRIT.reduce((a, c) => a + (s[c.k] != null ? s[c.k] : 0), 0);
+const complete = s => count(s) === 5;
+const band = t => t >= 7 ? {cls:'ok', text:'unauffällig'} : t >= 4 ? {cls:'warn', text:'mäßig auffällig'} : {cls:'crit', text:'kritisch niedrig'};
+const apgarLine = b => MS.map(m => complete(b.apgar[m]) ? total(b.apgar[m]) : '–').join(' / ');
+function applyScores(b, m, vals){
+  Object.assign(b.apgar[m], vals);
+  b.doneAt[m] = complete(b.apgar[m]) ? (b.doneAt[m] || Date.now()) : null;
+  save();
+}
+const setScore = (b, m, k, v) => applyScores(b, m, {[k]: v});
+
+/* ---------- Formatierung ---------- */
+const pad = n => String(n).padStart(2, '0');
+const fmtHMS = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+const fmtDate = t => new Date(t).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'});
+const fmtLong = t => new Date(t).toLocaleDateString('de-DE', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+function fmtDur(ms, spaced){
+  const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60, sep = spaced ? ' : ' : ':';
+  return h ? `${h}${sep}${pad(m)}${sep}${pad(x)}` : `${pad(m)}${sep}${pad(x)}`;
+}
+const minLabel = m => `${m} ${m === 1 ? 'Minute' : 'Minuten'}`;
+function setText(el, t){ if (el.textContent !== t) el.textContent = t; }
+
+/* ---------- Ton + Sprachausgabe ---------- */
+let actx = null, chain = Promise.resolve(), ttsPrimed = false, deVoice = null;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function unlockAudio(){
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!actx && AC) actx = new AC();
+    if (actx && actx.state !== 'running') actx.resume();
+  } catch (e) {}
+  if (!ttsPrimed && 'speechSynthesis' in window){
+    try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); ttsPrimed = true; } catch (e) {}
+  }
+}
+function pickVoice(){
+  try {
+    const vs = speechSynthesis.getVoices();
+    deVoice = vs.find(v => /^de[-_]DE/i.test(v.lang) && /anna|petra|helena|markus|google/i.test(v.name)) || vs.find(v => /^de/i.test(v.lang)) || null;
+  } catch (e) {}
+}
+if ('speechSynthesis' in window){ pickVoice(); try { speechSynthesis.addEventListener('voiceschanged', pickVoice); } catch (e) {} }
+function beep3(){
+  return new Promise(res => {
+    if (!actx){ res(); return; }
+    try {
+      if (actx.state !== 'running') actx.resume();
+      const t0 = actx.currentTime + 0.06;
+      for (let i = 0; i < 3; i++){
+        const s = t0 + i * 0.34, g = actx.createGain();
+        g.connect(actx.destination);
+        g.gain.setValueAtTime(0.0001, s);
+        g.gain.exponentialRampToValueAtTime(0.75, s + 0.012);
+        g.gain.setValueAtTime(0.75, s + 0.17);
+        g.gain.exponentialRampToValueAtTime(0.0001, s + 0.22);
+        [1175, 2350].forEach((f, j) => {
+          const o = actx.createOscillator(), og = actx.createGain();
+          o.type = 'sine'; o.frequency.value = f; og.gain.value = j ? 0.25 : 1;
+          o.connect(og); og.connect(g); o.start(s); o.stop(s + 0.24);
+        });
+      }
+    } catch (e) {}
+    setTimeout(res, 1150);
+  });
+}
+function say(text){
+  return new Promise(res => {
+    if (!('speechSynthesis' in window)){ res(); return; }
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'de-DE'; if (deVoice) u.voice = deVoice; u.rate = 0.95; u.volume = 1;
+      u.onend = res; u.onerror = res;
+      speechSynthesis.speak(u);
+      setTimeout(res, 20000);
+    } catch (e) { res(); }
+  });
+}
+const queueSound = fn => { chain = chain.then(fn).catch(() => {}); return chain; };
+
+/* ---------- Bildschirm wach halten ---------- */
+let wake = null;
+async function keepAwake(){
+  if (wake || !('wakeLock' in navigator) || document.visibilityState !== 'visible'){ updateWakeNote(); return; }
+  try {
+    wake = await navigator.wakeLock.request('screen');
+    wake.addEventListener('release', () => { wake = null; updateWakeNote(); });
+  } catch (e) { wake = null; }
+  updateWakeNote();
+}
+function releaseWake(){ try { if (wake) wake.release(); } catch (e) {} wake = null; }
+function updateWakeNote(){
+  setText($('#wakeNote'), wake ? 'Bildschirm bleibt eingeschaltet.' : 'Bitte die automatische Bildschirmsperre ausschalten. Ton und Ansage kommen nur bei eingeschaltetem Bildschirm.');
+}
+
+/* ---------- Spracheingabe ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+const NUMW = {'null':0, '0':0, 'eins':1, 'ein':1, 'eine':1, 'einen':1, 'einer':1, '1':1, 'zwei':2, 'zwo':2, '2':2};
+const KEYW = [
+  ['at', /^(atmung|atem|atmen|atmet|atemanstrengung)/],
+  ['pu', /^(puls|herz|herzfrequenz|herzschlag|frequenz)/],
+  ['to', /^(grundtonus|tonus|muskel|muskeltonus|spannung|aktivität)/],
+  ['ha', /^(aussehen|haut|hautfarbe|farbe|kolorit)/],
+  ['re', /^(reflex|reflexe|reflexerregbarkeit|reaktion|grimasse|grimassieren)/],
+];
+function parseApgar(text){
+  const toks = String(text).toLowerCase()
+    .replace(/(unter|weniger als)\s*(hundert|100)/g, ' 1 ').replace(/(über|mehr als)\s*(hundert|100)/g, ' 2 ')
+    .replace(/[^a-zäöüß0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+  const out = {}, loose = [];
+  let pend = null;
+  for (const t of toks){
+    const key = KEYW.find(([, re]) => re.test(t));
+    if (key){ pend = key[0]; continue; }
+    if (t in NUMW){
+      if (pend && !(pend in out)){ out[pend] = NUMW[t]; pend = null; } else loose.push(NUMW[t]);
+      continue;
+    }
+    if (/^\d+$/.test(t)){
+      if (pend === 'pu' && !('pu' in out)) out.pu = +t >= 100 ? 2 : +t > 0 ? 1 : 0;   // "Puls 120" -> 2 Punkte
+      pend = null;
+    }
+  }
+  if (!Object.keys(out).length){
+    if (loose.length === 5) CRIT.forEach((c, i) => { out[c.k] = loose[i]; });
+    else if (loose.length === 1 && toks.some(t => /^(alle|alles|überall|jeweils)$/.test(t))) CRIT.forEach(c => { out[c.k] = loose[0]; });
+  }
+  return out;
+}
+let rec = null, recBtn = null;
+function stopListening(){ if (rec){ try { rec.abort(); } catch (e) {} } }
+function toggleListen(container, m, btn){
+  if (rec){ const same = recBtn === btn; stopListening(); if (same) return; }
+  if (!SR) return;
+  const card = btn.closest('.card'), msg = card.querySelector('[data-role=vmsg]'), lbl = btn.querySelector('span');
+  try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) {}
+  let r;
+  try { r = new SR(); } catch (e) { msg.textContent = 'Spracheingabe ist hier nicht verfügbar. Bitte Werte antippen.'; return; }
+  r.lang = 'de-DE'; r.interimResults = true; r.continuous = false; r.maxAlternatives = 3;
+  rec = r; recBtn = btn; btn.classList.add('listening'); lbl.textContent = 'Hört zu …';
+  msg.textContent = 'Zum Beispiel: „Atmung 2, Puls 2, Tonus 1, Aussehen 1, Reflexe 2“ oder fünf Zahlen in dieser Reihenfolge.';
+  let finalText = '', err;
+  r.onresult = ev => {
+    let interim = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++){
+      const res = ev.results[i];
+      if (res.isFinal){
+        let pick = res[0].transcript, n = Object.keys(parseApgar(pick)).length;
+        for (let j = 1; j < res.length; j++){
+          const nj = Object.keys(parseApgar(res[j].transcript)).length;
+          if (nj > n){ n = nj; pick = res[j].transcript; }
+        }
+        finalText += ' ' + pick;
+      } else interim += res[0].transcript;
+    }
+    msg.textContent = '„' + (finalText + ' ' + interim).trim() + '“';
+  };
+  r.onerror = ev => {
+    const map = {
+      'not-allowed': 'Mikrofon nicht freigegeben. In dieser Ansicht ist die Spracheingabe gesperrt. Bitte Werte antippen.',
+      'service-not-allowed': 'Spracherkennung ist in diesem Browser gesperrt. Bitte Werte antippen.',
+      'no-speech': 'Nichts gehört. Bitte noch einmal versuchen.',
+      'network': 'Die Spracherkennung dieses Browsers braucht Internet. Bitte Werte antippen.',
+      'audio-capture': 'Kein Mikrofon gefunden. Bitte Werte antippen.',
+      'aborted': '',
+    };
+    err = ev.error in map ? map[ev.error] : 'Spracheingabe fehlgeschlagen. Bitte Werte antippen.';
+  };
+  r.onend = () => {
+    btn.classList.remove('listening'); lbl.textContent = 'Einsprechen'; rec = null; recBtn = null;
+    if (err !== undefined){ if (err) msg.textContent = err; return; }
+    const said = finalText.trim(), parsed = parseApgar(said), n = Object.keys(parsed).length;
+    if (!n){ msg.textContent = said ? `„${said}“ – keine Werte erkannt. Bitte noch einmal oder antippen.` : 'Nichts verstanden. Bitte noch einmal versuchen.'; return; }
+    const b = byUid(container.dataset.uid); if (!b) return;
+    applyScores(b, m, parsed);
+    updateCards(container, b); afterScoreChange(b);
+    msg.textContent = `„${said}“ → ${n} von 5 Werten übernommen. Bitte prüfen.`;
+  };
+  try { r.start(); }
+  catch (e) { btn.classList.remove('listening'); lbl.textContent = 'Einsprechen'; rec = null; recBtn = null; msg.textContent = 'Spracheingabe konnte nicht starten. Bitte Werte antippen.'; }
+}
+
+/* ---------- Apgar-Karten ---------- */
+function cardHTML(m, pfx){
+  const id = `${pfx}-${m}`;
+  return `<article class="card" data-m="${m}">
+    <button type="button" class="card-head" aria-expanded="false" aria-controls="${id}-body">
+      <span class="card-title">${minLabel(m)}</span><span class="card-sub" data-role="sub"></span><span class="chip" data-role="chip"></span>${CHEV}
+    </button>
+    <div class="card-body" id="${id}-body" hidden>
+      ${CRIT.map(c => `<div class="crit" role="group" aria-labelledby="${id}-${c.k}">
+        <div class="crit-name" id="${id}-${c.k}"><span class="crit-letter" aria-hidden="true">${c.letter}</span>${c.name}</div>
+        <div class="opts">${c.opts.map((t, v) => `<button type="button" class="opt" data-k="${c.k}" data-v="${v}" aria-pressed="false"><b>${v}</b><span>${t}</span></button>`).join('')}</div>
+      </div>`).join('')}
+      <div class="card-foot">
+        <div class="sum"><span class="sum-label">Summe</span><b data-role="sum">–</b><span class="sum-max">/ 10</span></div>
+        <button type="button" class="btn btn-mic" data-role="mic">${MIC}<span>Einsprechen</span></button>
+      </div>
+      <p class="voice-msg" data-role="vmsg" aria-live="polite"></p>
+      <p class="card-hint" data-role="hint" hidden></p>
+    </div>
+  </article>`;
+}
+function buildCards(container, b){
+  container.dataset.uid = b.uid;
+  container.innerHTML = MS.map(m => cardHTML(m, container.id)).join('');
+  updateCards(container, b);
+}
+function updateCards(container, b){
+  const now = Date.now();
+  const latestPassed = b.bornAt ? [...MS].reverse().find(m => now >= b.bornAt + m * 60000) : null;
+  for (const card of $$('.card', container)){
+    const m = +card.dataset.m, s = b.apgar[m], n = count(s), due = b.bornAt ? b.bornAt + m * 60000 : null;
+    let state = 'planned', chip = 'geplant', cls = '';
+    if (n === 5){ const t = total(s), bd = band(t); state = 'done'; chip = `${t} · ${bd.text}`; cls = 'chip-' + bd.cls; }
+    else if (due && now >= due && !b.closedAt){ state = 'due'; chip = (m === latestPassed ? 'jetzt erheben' : 'nachtragen') + (n ? ` · ${n}/5` : ''); cls = 'chip-due'; }
+    else if (n){ chip = `${n}/5 erfasst`; }
+    else if (b.closedAt){ chip = 'nicht erfasst'; }
+    else if (!b.bornAt){ chip = 'nach Geburt'; }
+    card.dataset.state = state;
+    const c = card.querySelector('[data-role=chip]'); setText(c, chip); c.className = 'chip ' + cls;
+    setText(card.querySelector('[data-role=sub]'), !due ? 'startet mit der Geburt' : (n === 5 && b.doneAt[m]) ? 'erfasst ' + fmtHMS(b.doneAt[m]) : 'fällig ' + fmtHMS(due));
+    for (const o of $$('.opt', card)){
+      o.setAttribute('aria-pressed', String(s[o.dataset.k] === +o.dataset.v));
+      o.disabled = !b.bornAt;
+    }
+    setText(card.querySelector('[data-role=sum]'), n === 5 ? String(total(s)) : '–');
+    const hint = card.querySelector('[data-role=hint]'), low = n === 5 && total(s) < 7 && m >= 5;
+    hint.hidden = !low;
+    if (low) setText(hint, 'Wert unter 7: Laut AAP/ACOG weitere Bewertungen alle 5 Minuten bis 20 Minuten nach der Geburt.');
+    const mic = card.querySelector('[data-role=mic]'); mic.hidden = !SR; mic.disabled = !b.bornAt;
+  }
+}
+function openCard(container, m, scroll){
+  const card = $(`.card[data-m="${m}"]`, container); if (!card) return;
+  const head = $('.card-head', card);
+  head.setAttribute('aria-expanded', 'true'); $('.card-body', card).hidden = false;
+  if (scroll){
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (window.innerWidth < 900) card.scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block: 'start'});
+  }
+}
+function onCardsClick(e){
+  const container = e.currentTarget, b = byUid(container.dataset.uid); if (!b) return;
+  const head = e.target.closest('.card-head');
+  if (head){
+    const open = head.getAttribute('aria-expanded') !== 'true';
+    head.setAttribute('aria-expanded', String(open)); $('.card-body', head.closest('.card')).hidden = !open;
+    return;
+  }
+  const opt = e.target.closest('.opt');
+  if (opt && !opt.disabled){
+    setScore(b, +opt.closest('.card').dataset.m, opt.dataset.k, +opt.dataset.v);
+    updateCards(container, b); afterScoreChange(b);
+    return;
+  }
+  const mic = e.target.closest('[data-role=mic]');
+  if (mic && !mic.disabled) toggleListen(container, +mic.closest('.card').dataset.m, mic);
+}
+$('#cardsBirth').addEventListener('click', onCardsClick);
+$('#cardsSummary').addEventListener('click', onCardsClick);
+function afterScoreChange(b){
+  updateBanner();
+  if (view === 'summary' && viewUid === b.uid) renderSummaryData(b);
+}
+
+/* ---------- Ansichten ---------- */
+let view = 'start', viewUid = null;
+function show(name, uid){
+  view = name; viewUid = uid || null;
+  for (const s of $$('.screen')) s.hidden = s.id !== 'screen-' + name;
+  if (name === 'start') renderStart();
+  if (name === 'birth') renderBirth();
+  if (name === 'summary') renderSummary();
+  window.scrollTo(0, 0);
+  tick();
+}
+
+/* 1 · Start */
+const gidIn = $('#gid');
+function validateStart(){
+  const v = gidIn.value.trim();
+  $('#gidWarn').hidden = !(/[a-zäöüß]{2,}\s+[a-zäöüß]{2,}/i.test(v) || v.includes('@'));
+  $('#startBtn').disabled = !(v && $('input[name=room]:checked'));
+}
+function renderStart(){
+  const a = active();
+  $('#resumeBox').hidden = !a;
+  $('#replaceNote').hidden = !a;
+  if (a){ $('#resumeId').textContent = a.gid; $('#replaceId').textContent = a.gid; }
+  renderHistory();
+  validateStart();
+}
+function renderHistory(){
+  const ul = $('#historyList'), list = store.births.slice().reverse();
+  ul.textContent = '';
+  $('#historyEmpty').hidden = list.length > 0;
+  for (const b of list){
+    const li = document.createElement('li'), btn = document.createElement('button'), running = !b.closedAt;
+    btn.type = 'button'; btn.className = 'hist'; btn.dataset.uid = b.uid;
+    const id = document.createElement('span'); id.className = 'hist-id'; id.textContent = b.gid;
+    const meta = document.createElement('span'); meta.className = 'hist-meta';
+    meta.textContent = `Kreißsaal ${b.room} · ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt).slice(0, 5) : 'vor der Geburt'} · Apgar ${apgarLine(b)}`;
+    const chip = document.createElement('span'); chip.className = 'chip' + (running ? ' chip-due' : ''); chip.textContent = running ? 'läuft' : 'abgeschlossen';
+    btn.append(id, meta, chip); li.append(btn); ul.append(li);
+  }
+}
+gidIn.addEventListener('input', validateStart);
+$$('input[name=room]').forEach(r => r.addEventListener('change', validateStart));
+$('#startForm').addEventListener('submit', e => {
+  e.preventDefault();
+  validateStart();
+  if ($('#startBtn').disabled) return;
+  unlockAudio();
+  const a = active();
+  if (a){ if (a.bornAt) a.closedAt = Date.now(); else removeBirth(a.uid); }
+  const b = newBirth(gidIn.value.trim(), $('input[name=room]:checked').value);
+  store.births.push(b); store.activeUid = b.uid; save();
+  gidIn.value = ''; $$('input[name=room]').forEach(r => { r.checked = false; });
+  keepAwake();
+  show('birth', b.uid);
+});
+$('#resumeBtn').addEventListener('click', () => { const a = active(); if (a){ unlockAudio(); keepAwake(); show('birth', a.uid); } });
+$('#historyList').addEventListener('click', e => {
+  const btn = e.target.closest('.hist'); if (!btn) return;
+  const b = byUid(btn.dataset.uid); if (!b) return;
+  show(b.closedAt ? 'summary' : 'birth', b.uid);
+});
+$('#testBtn').addEventListener('click', () => {
+  unlockAudio();
+  const parts = [];
+  if (!actx) parts.push('Signalton wird von diesem Browser nicht unterstützt.');
+  if (!('speechSynthesis' in window)) parts.push('Sprachausgabe wird von diesem Browser nicht unterstützt.');
+  $('#testMsg').textContent = parts.length ? parts.join(' ') : 'Drei Töne, dann eine Ansage. Am iPhone den Stummschalter prüfen und die Lautstärke hochdrehen.';
+  queueSound(async () => { await beep3(); await wait(300); await say('Ton und Ansage funktionieren.'); });
+});
+
+/* 2 · Geburtsvorgang */
+function renderBirth(){
+  const b = byUid(viewUid); if (!b){ show('start'); return; }
+  $('#bMeta').textContent = 'Geb.-ID ' + b.gid;
+  $('#bTitle').textContent = 'Kreißsaal ' + b.room;
+  $('#preBirth').hidden = !!b.bornAt;
+  $('.clock').classList.toggle('compact', !!b.bornAt);
+  $('#postBirth').hidden = !b.bornAt;
+  $('#apgarIntro').hidden = !!b.bornAt;
+  $('#adjustForm').hidden = true;
+  const cb = $('#closeBtn'); disarm(cb); cb.textContent = b.bornAt ? 'Abschließen' : 'Abbrechen';
+  if (b.bornAt){ $('#bornAt').textContent = fmtHMS(b.bornAt); $('#bornDate').textContent = fmtDate(b.bornAt); }
+  buildCards($('#cardsBirth'), b);
+  updateBanner(); updateWakeNote();
+}
+$('#bornBtn').addEventListener('click', () => {
+  const t = Date.now(), b = byUid(viewUid);
+  if (!b || b.bornAt) return;
+  unlockAudio();
+  b.bornAt = t; b.announced = {1:false, 5:false, 10:false};
+  store.activeUid = b.uid; save();
+  renderBirth(); keepAwake();
+  queueSound(() => say('Geburtszeit erfasst.'));
+});
+$('#undoBtn').addEventListener('click', () => {
+  const b = byUid(viewUid); if (!b) return;
+  b.bornAt = null; b.announced = {1:false, 5:false, 10:false}; save();
+  renderBirth();
+});
+$('#adjustBtn').addEventListener('click', () => {
+  const b = byUid(viewUid); if (!b || !b.bornAt) return;
+  $('#adjustTime').value = fmtHMS(b.bornAt); $('#adjustForm').hidden = false; $('#adjustTime').focus();
+});
+$('#adjustCancel').addEventListener('click', () => { $('#adjustForm').hidden = true; });
+$('#adjustForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const b = byUid(viewUid); if (!b || !b.bornAt) return;
+  const p = $('#adjustTime').value.split(':').map(Number);
+  if (p.length < 2 || p.some(isNaN)) return;
+  const d = new Date(b.bornAt); d.setHours(p[0], p[1], p[2] || 0, 0);
+  let t = d.getTime(); if (t > Date.now() + 1000) t -= 864e5;
+  b.bornAt = t;
+  const el = Date.now() - t;
+  for (const m of MS) b.announced[m] = b.announced[m] && el >= m * 60000;
+  save(); renderBirth();
+});
+$('#backBtn').addEventListener('click', () => { stopListening(); show('start'); });
+function arm(btn, label, action){
+  if (btn.dataset.armed === '1'){ disarm(btn); action(); return; }
+  btn.dataset.armed = '1'; btn.dataset.label = btn.textContent; btn.textContent = label; btn.classList.add('armed');
+  clearTimeout(btn._t); btn._t = setTimeout(() => disarm(btn), 4000);
+}
+function disarm(btn){
+  if (btn.dataset.armed === '1') btn.textContent = btn.dataset.label;
+  btn.dataset.armed = ''; btn.classList.remove('armed'); clearTimeout(btn._t);
+}
+$('#closeBtn').addEventListener('click', e => {
+  const btn = e.currentTarget, b = byUid(viewUid); if (!b) return;
+  if (!b.bornAt){ arm(btn, 'Wirklich abbrechen?', () => { removeBirth(b.uid); show('start'); }); return; }
+  const open = MS.filter(m => !complete(b.apgar[m])).length;
+  arm(btn, open ? `${open} offen – trotzdem?` : 'Wirklich abschließen?', () => {
+    stopListening();
+    b.closedAt = Date.now(); if (store.activeUid === b.uid) store.activeUid = null; save();
+    releaseWake(); show('summary', b.uid);
+  });
+});
+function updateBanner(){
+  const ban = $('#banner'), b = view === 'birth' ? byUid(viewUid) : null;
+  if (!b || !b.bornAt || b.closedAt){ ban.hidden = true; return; }
+  const el = Date.now() - b.bornAt, m = [...MS].reverse().find(x => el >= x * 60000 && !complete(b.apgar[x]));
+  ban.hidden = !m;
+  if (m){ ban.dataset.m = m; setText($('#bannerText'), `${m}. Minute vorbei – Apgar jetzt erheben`); }
+}
+$('#banner').addEventListener('click', e => openCard($('#cardsBirth'), +e.currentTarget.dataset.m, true));
+
+/* Meilensteine 1 / 5 / 10 Minuten */
+function checkMilestones(b, now){
+  const el = now - b.bornAt; let hit = null, changed = false;
+  for (const m of MS){
+    if (!b.announced[m] && el >= m * 60000){
+      b.announced[m] = true; changed = true;
+      if (el - m * 60000 < 120000) hit = m;   // nur ansagen, wenn nicht länger als 2 Min. überfällig (z. B. nach Neuladen)
+    }
+  }
+  if (!changed) return;
+  save();
+  if (hit !== null && (view !== 'birth' || viewUid !== b.uid)) show('birth', b.uid);
+  if (view === 'birth' && viewUid === b.uid){ updateCards($('#cardsBirth'), b); updateBanner(); }
+  if (hit !== null){
+    openCard($('#cardsBirth'), hit, true);
+    const app = $('#app'); app.classList.remove('alerting'); void app.offsetWidth; app.classList.add('alerting');
+    setTimeout(() => app.classList.remove('alerting'), 2200);
+    stopListening();
+    queueSound(async () => { await beep3(); await wait(350); await say(ANSAGE(hit)); });
+  }
+}
+
+/* 3 · Protokoll */
+function protocolText(b){
+  const lines = ['Geburtsuhr – Protokoll', `Geburten-ID: ${b.gid}`, `Kreißsaal: ${b.room}`,
+    `Geburt: ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt) + ' Uhr' : '–'}`,
+    `Apgar (1/5/10 Min.): ${apgarLine(b)}`, ''];
+  for (const m of MS){
+    const s = b.apgar[m];
+    const parts = CRIT.map(c => `${c.name} ${s[c.k] != null ? s[c.k] : '–'}`).join(', ');
+    lines.push(`${String(m).padStart(2, ' ')} Min.: ${complete(s) ? total(s) : 'unvollständig'} (${parts})${b.doneAt[m] ? ', erfasst ' + fmtHMS(b.doneAt[m]) : ''}`);
+  }
+  if (b.closedAt) lines.push('', `Abgeschlossen: ${fmtDate(b.closedAt)}, ${fmtHMS(b.closedAt)} Uhr`);
+  return lines.join('\n');
+}
+function renderSummaryData(b){
+  $('#sMeta').textContent = 'Geb.-ID ' + b.gid;
+  $('#sApgar').textContent = apgarLine(b);
+  $('#sId').textContent = b.gid;
+  $('#sRoom').textContent = 'Kreißsaal ' + b.room;
+  $('#sBorn').textContent = b.bornAt ? `${fmtLong(b.bornAt)}, ${fmtHMS(b.bornAt)} Uhr` : '–';
+  $('#sClosed').textContent = b.closedAt ? `${fmtDate(b.closedAt)}, ${fmtHMS(b.closedAt)} Uhr` : '–';
+  const tbl = $('#sTable'); tbl.textContent = '';
+  const thead = tbl.createTHead(), hr = thead.insertRow();
+  ['Kriterium', '1 Min.', '5 Min.', '10 Min.'].forEach(h => { const th = document.createElement('th'); th.scope = 'col'; th.textContent = h; hr.append(th); });
+  const tb = tbl.createTBody();
+  for (const c of CRIT){
+    const r = tb.insertRow(); r.insertCell().textContent = c.name;
+    for (const m of MS){ const v = b.apgar[m][c.k]; r.insertCell().textContent = v != null ? v : '–'; }
+  }
+  const tr = tb.insertRow(); tr.insertCell().textContent = 'erfasst um';
+  for (const m of MS){ const td = tr.insertCell(); td.className = 't'; td.textContent = b.doneAt[m] ? fmtHMS(b.doneAt[m]).slice(0, 5) : '–'; }
+  const tf = tbl.createTFoot().insertRow(); tf.insertCell().textContent = 'Summe';
+  for (const m of MS) tf.insertCell().textContent = complete(b.apgar[m]) ? total(b.apgar[m]) : '–';
+  $('#protoText').textContent = protocolText(b);
+}
+function renderSummary(){
+  const b = byUid(viewUid); if (!b){ show('start'); return; }
+  renderSummaryData(b);
+  $('#copyMsg').textContent = '';
+  $('#cardsSummary').hidden = true; $('#editBtn').setAttribute('aria-expanded', 'false'); $('#editBtn').textContent = 'Werte bearbeiten';
+  buildCards($('#cardsSummary'), b);
+  disarm($('#deleteBtn'));
+}
+$('#copyBtn').addEventListener('click', () => {
+  const text = $('#protoText').textContent, msg = $('#copyMsg');
+  const fallback = () => {
+    const range = document.createRange(); range.selectNodeContents($('#protoText'));
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    msg.textContent = 'Text ist markiert. Jetzt mit „Kopieren“ übernehmen.';
+  };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => { msg.textContent = 'Protokoll kopiert.'; }, fallback);
+    else fallback();
+  } catch (e) { fallback(); }
+});
+$('#editBtn').addEventListener('click', e => {
+  const open = $('#cardsSummary').hidden;
+  $('#cardsSummary').hidden = !open; e.currentTarget.setAttribute('aria-expanded', String(open));
+  e.currentTarget.textContent = open ? 'Fertig' : 'Werte bearbeiten';
+});
+$('#newBtn').addEventListener('click', () => { show('start'); gidIn.focus(); });
+$('#deleteBtn').addEventListener('click', e => {
+  const b = byUid(viewUid); if (!b) return;
+  arm(e.currentTarget, 'Wirklich löschen?', () => { removeBirth(b.uid); show('start'); });
+});
+
+/* ---------- Takt ---------- */
+let lastSec = -1;
+function tick(){
+  const now = Date.now(), a = active();
+  if (a && a.bornAt) checkMilestones(a, now);
+  if (view === 'birth'){
+    const b = byUid(viewUid);
+    const sec = Math.floor(now / 1000);
+    if (sec !== lastSec){
+      lastSec = sec;
+      const t = fmtHMS(now);
+      setText($('#date'), fmtLong(now)); setText($('#hm'), t.slice(0, 5)); setText($('#ss'), t.slice(6));
+    }
+    if (b && b.bornAt){
+      const el = now - b.bornAt;
+      setText($('#bStatus'), b.closedAt ? 'Abgeschlossen' : 'Läuft');
+      const timer = $('#timer'); setText(timer, fmtDur(el, true)); timer.classList.toggle('long', el >= 3600000);
+      const next = MS.find(m => el < m * 60000), prev = next ? (MS[MS.indexOf(next) - 1] || 0) : 10;
+      const frac = next ? (el - prev * 60000) / ((next - prev) * 60000) : 1;
+      $('#barFill').style.transform = `scaleX(${Math.min(1, Math.max(0, frac))})`;
+      $('.bar').setAttribute('aria-valuenow', String(Math.round(frac * 100)));
+      setText($('#nextLine'), next ? `Nächste Bewertung: ${minLabel(next)} · um ${fmtHMS(b.bornAt + next * 60000)} · in ${fmtDur(next * 60000 - el)}`
+                                   : 'Alle drei Bewertungszeitpunkte erreicht. Der Timer läuft weiter.');
+      $('#undoBtn').hidden = !(el < 60000 && !MS.some(m => count(b.apgar[m])));
+    } else if (b){
+      setText($('#bStatus'), 'Wartet auf Geburt');
+    }
+    $('#soundNote').hidden = !(b && b.bornAt && !b.closedAt && (!actx || actx.state !== 'running'));
+  }
+  if (view === 'start' && a){
+    setText($('#resumeMeta'), `Kreißsaal ${a.room} · ` + (a.bornAt ? 'seit Geburt ' + fmtDur(now - a.bornAt) : 'wartet auf Geburt'));
+  }
+}
+
+/* ---------- Nachtmodus ---------- */
+const root = document.documentElement;
+const isDark = () => { const t = root.getAttribute('data-theme'); return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+function syncThemeBtn(){ $('#themeBtn').setAttribute('aria-pressed', String(isDark())); }
+try { const t = localStorage.getItem(THEME_KEY); if (t === 'dark' || t === 'light') root.setAttribute('data-theme', t); } catch (e) {}
+$('#themeBtn').addEventListener('click', () => {
+  const t = isDark() ? 'light' : 'dark'; root.setAttribute('data-theme', t); syncThemeBtn();
+  try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+});
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncThemeBtn); } catch (e) {}
+syncThemeBtn();
+
+/* ---------- Web-App: Offline-Speicher + Updates (nur in der gehosteten Fassung mit Manifest) ---------- */
+if (document.querySelector('link[rel="manifest"]')){
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  $('#installHint').hidden = standalone;
+  if ('serviceWorker' in navigator){
+    let wantReload = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (wantReload) location.reload(); });
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      const offer = () => { $('#updateBox').hidden = !(reg.waiting && navigator.serviceWorker.controller); };
+      offer();
+      reg.addEventListener('updatefound', () => {
+        const w = reg.installing;
+        if (w) w.addEventListener('statechange', () => { if (w.state === 'installed') offer(); });
+      });
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+      $('#updateBtn').addEventListener('click', () => { if (reg.waiting){ wantReload = true; reg.waiting.postMessage('skipWaiting'); } });
+      return navigator.serviceWorker.ready;
+    }).then(() => { $('#offlineNote').hidden = false; }).catch(() => {});
+  }
+}
+
+/* ---------- Start ---------- */
+document.addEventListener('pointerdown', () => { unlockAudio(); if (active() && !wake) keepAwake(); }, {passive: true});
+document.addEventListener('keydown', () => unlockAudio());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible'){ if (active()) keepAwake(); tick(); } });
+load();
+const a0 = active();
+if (a0) show('birth', a0.uid); else show('start');
+setInterval(tick, 250);
+})();
+</script>
+
+</body>
+</html>
