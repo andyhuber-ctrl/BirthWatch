@@ -19,8 +19,8 @@
 <title>BirthWatch</title>
 <meta name="theme-color" content="#5d7cf7">
 <style>
-/* Layout: Phone = eine Spalte. Ab 900 px (iPad quer) links Uhr + Timer (mitlaufend), rechts die drei Apgar-Karten.
-   Look nach Vorlage: Himmelblau-Verlauf, fast schwarze Schrift, dunkle Karten, Pillen-Buttons. Nachtmodus = gedimmtes Nachtblau. */
+/* Ablauf nach Handskizze (12.10.2026): 1 Daten eingeben → 2 nur „Geburt“ / „Notfall“ → 3 „Seit Geburt“ mit Balken,
+   APGAR nur als Signal + Ansage nach 1/5/10 Min. Look: Himmelblau-Verlauf, fast schwarze Schrift, Pillen-Buttons. */
 :root{
   --sky-top:#5d7cf7; --sky-bottom:#8a96f5;
   --ink:#0d1122; --ink-2:#151a38; --rule:rgba(13,17,34,.28); --track:rgba(13,17,34,.16);
@@ -28,7 +28,7 @@
   --pick:#7b95ff; --pick-ink:#0b0f1f;
   --btn:#0d1122; --btn-ink:#f4f6ff;
   --due:#ffd84d; --due-ink:#1f1800;
-  --ok-bg:#c7f0d6; --ok-ink:#0b4424; --warn-bg:#ffe6a3; --warn-ink:#553a00; --crit-bg:#ffd0d0; --crit-ink:#77121a;
+  --warn-bg:#ffe6a3; --warn-ink:#553a00; --crit-bg:#ffd0d0; --crit-ink:#77121a;
   --focus:#ffffff;
   --alarm-top:#d42a2a; --alarm-bottom:#9e1515; --alarm-ink:#ffffff; --alarm-ink-2:#ffe3e3; --alarm-deep:#7a0d0d;
   --sos:#d42a2a; --sos-ink:#ffffff; --sos-edge:#ffffff;
@@ -43,7 +43,7 @@
     --pick:#6683f7; --pick-ink:#050816;
     --btn:#8ea3ff; --btn-ink:#070b1c;
     --due:#ffd84d; --due-ink:#1f1800;
-    --ok-bg:#12391f; --ok-ink:#93e6b0; --warn-bg:#3d2d05; --warn-ink:#ffd36b; --crit-bg:#45121a; --crit-ink:#ffadb4;
+    --warn-bg:#3d2d05; --warn-ink:#ffd36b; --crit-bg:#45121a; --crit-ink:#ffadb4;
     --focus:#ffffff;
     --alarm-top:#8a1414; --alarm-bottom:#4a0909; --alarm-ink:#fff1f1; --alarm-ink-2:#ffc9c9; --alarm-deep:#6b0b0b;
     --sos:#e03a3a; --sos-ink:#ffffff; --sos-edge:#ff9b9b;
@@ -57,7 +57,7 @@
   --pick:#6683f7; --pick-ink:#050816;
   --btn:#8ea3ff; --btn-ink:#070b1c;
   --due:#ffd84d; --due-ink:#1f1800;
-  --ok-bg:#12391f; --ok-ink:#93e6b0; --warn-bg:#3d2d05; --warn-ink:#ffd36b; --crit-bg:#45121a; --crit-ink:#ffadb4;
+  --warn-bg:#3d2d05; --warn-ink:#ffd36b; --crit-bg:#45121a; --crit-ink:#ffadb4;
   --focus:#ffffff;
   --alarm-top:#8a1414; --alarm-bottom:#4a0909; --alarm-ink:#fff1f1; --alarm-ink-2:#ffc9c9; --alarm-deep:#6b0b0b;
   --sos:#e03a3a; --sos-ink:#ffffff; --sos-edge:#ff9b9b;
@@ -72,12 +72,12 @@ body{margin:0;background:var(--sky-top);color:var(--ink);font-family:var(--font)
 body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-bottom) 100%)}
 :focus-visible{outline:3px solid var(--focus);outline-offset:3px}
 button{font:inherit}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 .app{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:12px 28px;display:flex;flex-direction:column;gap:18px}
 @media (min-width:600px){.app{padding-inline:28px}}
 
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:.02em}
 .brand-logo{display:block;height:44px;width:auto;border-radius:12px}
 .ghost{appearance:none;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 14px;border-radius:999px;
   border:2px solid var(--rule);background:transparent;color:var(--ink);font-weight:600;font-size:14px;cursor:pointer}
@@ -91,7 +91,6 @@ button{font:inherit}
 h1{margin:-10px 0 0;font-size:clamp(32px,8vw,44px);line-height:1.05;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
 h2{margin:0;font-size:21px;font-weight:800;letter-spacing:-.01em}
 .stack{display:flex;flex-direction:column;gap:14px;min-width:0}
-.center{text-align:center}
 .note{margin:0;font-size:14px;color:var(--ink-2)}
 .note:empty{display:none}
 
@@ -106,15 +105,18 @@ h2{margin:0;font-size:21px;font-weight:800;letter-spacing:-.01em}
 .btn-outline{background:transparent;color:var(--ink);border:2px solid var(--ink)}
 .btn-pick{background:var(--pick);color:var(--pick-ink);border:2px solid var(--pick);min-height:52px;font-size:17px}
 .btn-wide{width:100%}
-.btn-born{width:100%;min-height:108px;font-size:clamp(28px,7.5vw,36px);font-weight:800;letter-spacing:-.01em}
 .btn-sm{min-height:48px;font-size:16px;padding:8px 16px}
 .btn.armed{background:var(--crit-bg);border-color:var(--crit-bg);color:var(--crit-ink)}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .actions .btn{font-size:17px;padding-inline:14px}
 .link{appearance:none;background:none;border:0;padding:6px 0;color:var(--ink);font-weight:600;font-size:15px;
   text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.sos{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:60px;padding:12px 28px;
+  border-radius:999px;border:2px solid var(--sos-edge);background:var(--sos);color:var(--sos-ink);font-weight:800;font-size:21px;
+  letter-spacing:.02em;cursor:pointer;touch-action:manipulation}
+.sos svg{width:24px;height:24px}
 
-/* Panels + Formular */
+/* 1 · Formular */
 .panel{background:var(--panel);color:var(--panel-ink);border:1px solid var(--panel-edge);border-radius:24px;padding:20px}
 .form{display:flex;flex-direction:column;gap:20px}
 .label{display:block;margin:0 0 6px;font-size:15px;font-weight:700;color:var(--panel-mute)}
@@ -143,45 +145,42 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .resume-info{display:flex;flex-direction:column;min-width:0}
 .resume-info strong{font-size:24px;font-weight:800;overflow-wrap:anywhere}
 .resume-info span{font-size:14px;color:var(--panel-mute);font-variant-numeric:tabular-nums}
-
 .history{display:flex;flex-direction:column;gap:12px}
 .hist-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .hist{appearance:none;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;text-align:left;
   padding:12px 16px;border-radius:18px;border:2px solid var(--rule);background:transparent;color:var(--ink);cursor:pointer}
 .hist-id{font-weight:800;font-size:18px;overflow-wrap:anywhere}
 .hist-meta{grid-column:1;font-size:14px;color:var(--ink-2);font-variant-numeric:tabular-nums}
-.hist .chip{grid-column:2;grid-row:1 / span 2}
+.chip{grid-column:2;grid-row:1 / span 2;display:inline-flex;align-items:center;padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;
+  white-space:nowrap;background:var(--track);color:var(--ink)}
+.chip-due{background:var(--due);color:var(--due-ink)}
 
-/* Chips */
-.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;
-  background:var(--track);color:var(--ink)}
-.card .chip{background:var(--panel-rule);color:var(--panel-ink)}
-.chip.chip-due,.card .chip.chip-due{background:var(--due);color:var(--due-ink)}
-.chip.chip-ok,.card .chip.chip-ok{background:var(--ok-bg);color:var(--ok-ink)}
-.chip.chip-warn,.card .chip.chip-warn{background:var(--warn-bg);color:var(--warn-ink)}
-.chip.chip-crit,.card .chip.chip-crit{background:var(--crit-bg);color:var(--crit-ink)}
+/* 2 · Geburt oder Notfall */
+.wrap{width:100%;max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.choice-meta{margin:0;font-size:15px;font-weight:600;color:var(--ink-2);text-align:center;overflow-wrap:anywhere}
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tile{appearance:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:clamp(200px,52vw,360px);
+  padding:20px 12px;border-radius:28px;text-align:center;cursor:pointer;touch-action:manipulation;transition:transform .08s ease}
+.tile:active{transform:scale(.98)}
+.tile svg{width:clamp(34px,9vw,52px);height:auto}
+.tile-label{font-size:clamp(26px,7.5vw,48px);font-weight:800;letter-spacing:.04em;text-transform:uppercase;line-height:1}
+.tile-sub{font-size:15px;font-weight:600;line-height:1.3;opacity:.85;font-variant-numeric:tabular-nums}
+.tile-birth{background:var(--btn);color:var(--btn-ink);border:2px solid var(--btn)}
+.tile-sos{background:var(--sos);color:var(--sos-ink);border:2px solid var(--sos-edge)}
 
-/* Uhr + Timer */
-.birth-grid{display:grid;gap:22px}
-.col-main{display:flex;flex-direction:column;gap:18px;min-width:0}
-.col-side{display:flex;flex-direction:column;gap:12px;min-width:0}
-@media (min-width:900px){
-  .birth-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
-  .col-main{position:sticky;top:16px}
-}
-.clock{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
-.date{font-size:16px;font-weight:600;color:var(--ink-2)}
-.time{display:flex;align-items:flex-start;justify-content:center;font-weight:800;font-size:clamp(64px,21vw,124px);line-height:.95;
-  letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.time .sec{font-size:.32em;margin:.2em 0 0 .14em;letter-spacing:0;color:var(--ink-2)}
-.clock.compact .time{font-size:clamp(48px,14vw,84px)}
-.since{display:flex;flex-direction:column;gap:10px}
-.born-line{margin:0;text-align:center;font-size:16px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums}
-.born-line strong{color:var(--ink)}
-.timer-label{margin-top:6px;font-size:16px;font-weight:700;color:var(--ink-2)}
-.timer{font-weight:800;font-size:clamp(72px,23vw,150px);line-height:.9;letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
-.timer.long{font-size:clamp(52px,16vw,110px)}
-.bar{height:12px;border-radius:999px;background:var(--track);overflow:hidden}
+/* 3 · Seit Geburt */
+.b-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start;font-variant-numeric:tabular-nums}
+.born-line{margin:0;font-size:15px;font-weight:600;color:var(--ink-2);line-height:1.35}
+.born-line strong{display:block;font-size:22px;font-weight:800;color:var(--ink);white-space:nowrap}
+.b-now{text-align:right}
+.b-now .date{font-size:15px;font-weight:600;color:var(--ink-2)}
+.now-time{display:flex;justify-content:flex-end;align-items:flex-start;font-size:28px;font-weight:800;line-height:1.05}
+.now-time .sec{font-size:.5em;margin:.12em 0 0 .1em;color:var(--ink-2)}
+.b-center{display:flex;flex-direction:column;align-items:center;gap:2px;padding-block:6px}
+.timer-label{font-size:18px;font-weight:700;color:var(--ink-2)}
+.timer{font-weight:800;font-size:clamp(88px,28vw,210px);line-height:.9;letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.timer.long{font-size:clamp(60px,18vw,150px)}
+.bar{height:14px;border-radius:999px;background:var(--track);overflow:hidden}
 .bar span{display:block;height:100%;background:var(--ink);border-radius:inherit;transform-origin:left center;transform:scaleX(0);transition:transform .25s linear}
 .next{margin:0;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
 .links{display:flex;gap:18px;flex-wrap:wrap}
@@ -189,80 +188,30 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .adjust-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .time-input{min-height:48px;padding:8px 14px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--ink);
   font:700 20px var(--font);font-variant-numeric:tabular-nums}
-.banner{appearance:none;display:flex;align-items:center;gap:12px;width:100%;padding:14px 18px;border-radius:18px;border:2px solid var(--due);
-  background:var(--panel);color:var(--due);font-weight:800;font-size:19px;line-height:1.2;text-align:left;cursor:pointer}
+.banner{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:18px;border:2px solid var(--due);
+  background:var(--panel);color:var(--due);font-weight:800;font-size:19px;line-height:1.2}
 .banner svg{width:22px;height:22px;flex:none}
 .sound-note{margin:0;padding:10px 14px;border-radius:14px;background:var(--due);color:var(--due-ink);font-size:15px;font-weight:600}
+.sos-inline{align-self:center;width:min(100%,440px)}
 @keyframes nudge{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
 .alerting .timer{animation:nudge .5s ease-in-out 4}
-
-/* Apgar-Karten */
-.side-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.intro{margin:0;font-size:15px;color:var(--panel-mute)}
-.cards{display:flex;flex-direction:column;gap:12px}
-.card{background:var(--panel);color:var(--panel-ink);border:2px solid var(--panel-edge);border-radius:24px;overflow:hidden}
-.card[data-state="due"]{border-color:var(--due)}
-.card-head{appearance:none;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"title chip chev" "sub chip chev";
-  align-items:center;gap:2px 12px;padding:16px 18px;background:transparent;border:0;color:inherit;text-align:left;cursor:pointer}
-.card-title{grid-area:title;font-size:22px;font-weight:800;letter-spacing:-.01em}
-.card-sub{grid-area:sub;font-size:14px;color:var(--panel-mute);font-variant-numeric:tabular-nums}
-.card-head .chip{grid-area:chip}
-.chev{grid-area:chev;width:22px;height:22px;color:var(--panel-mute);transition:transform .2s ease}
-.card-head[aria-expanded="true"] .chev{transform:rotate(180deg)}
-.card-body{display:flex;flex-direction:column;gap:16px;padding:16px 18px 18px;border-top:1px solid var(--panel-rule)}
-.crit-name{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-weight:700;font-size:16px}
-.crit-letter{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--panel-rule);font-size:14px;font-weight:800}
-.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.opt{appearance:none;display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:76px;padding:10px 12px;border-radius:16px;
-  border:2px solid var(--panel-rule);background:transparent;color:var(--panel-ink);text-align:left;cursor:pointer;touch-action:manipulation}
-.opt b{font-size:24px;line-height:1;font-weight:800}
-.opt span{font-size:13px;line-height:1.25;color:var(--panel-mute);overflow-wrap:break-word;hyphens:manual}
-.opt[aria-pressed="true"]{background:var(--pick);border-color:var(--pick);color:var(--pick-ink)}
-.opt[aria-pressed="true"] span{color:var(--pick-ink)}
-.opt:disabled{opacity:.4;cursor:not-allowed}
-.card-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.sum{display:flex;align-items:baseline;gap:6px}
-.sum b{font-size:42px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
-.sum-label{font-size:15px;font-weight:700;color:var(--panel-mute)}
-.sum-max{font-weight:700;color:var(--panel-mute)}
-.btn-mic{min-height:52px;font-size:17px;background:transparent;color:var(--panel-ink);border:2px solid var(--panel-ink)}
-.btn-mic.listening{background:var(--due);border-color:var(--due);color:var(--due-ink)}
-.voice-msg{margin:0;font-size:14px;color:var(--panel-mute)}
-.voice-msg:empty{display:none}
-.card-hint{margin:0;padding:10px 12px;border-radius:12px;font-size:14px;background:var(--warn-bg);color:var(--warn-ink)}
-.btn-confirm{width:100%;min-height:64px;font-size:20px;background:var(--pick);color:var(--pick-ink);border:2px solid var(--pick)}
-.btn-confirm:disabled{background:transparent;color:var(--panel-mute);border-color:var(--panel-rule);opacity:1}
 
 /* Protokoll */
 .sum-grid{display:grid;gap:22px}
 @media (min-width:900px){.sum-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
-.apgar-big{font-size:clamp(44px,13vw,68px);line-height:1;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:2px 0 18px}
 .kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;margin:0}
 .kv dt{font-size:14px;font-weight:600;color:var(--panel-mute)}
 .kv dd{margin:0;font-weight:700;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.table-wrap{overflow-x:auto;padding-block:8px}
-.scores{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-.scores th,.scores td{padding:10px 8px;text-align:center;border-bottom:1px solid var(--panel-rule)}
-.scores th:first-child,.scores td:first-child{text-align:left}
-.scores thead th{font-size:14px;font-weight:700;color:var(--panel-mute)}
-.scores tbody td:first-child{font-weight:600}
-.scores tfoot td{font-size:20px;font-weight:800;border-bottom:0}
-.scores .t{font-size:13px;font-weight:600;color:var(--panel-mute)}
 .proto{margin:0;padding:16px;border-radius:18px;background:var(--panel);color:var(--panel-ink);border:1px solid var(--panel-edge);
   font:500 14px/1.55 var(--mono);white-space:pre-wrap;overflow-x:auto;-webkit-user-select:text;user-select:text}
-
 .foot{margin:8px 0 0;font-size:13px;color:var(--ink-2);text-align:center;text-wrap:balance}
 
-/* Notfall-Leiste + Notfall-Modus (roter Hintergrund) */
+/* Notfall (roter Hintergrund) */
 body.alarm{--sky-top:var(--alarm-top);--sky-bottom:var(--alarm-bottom);--ink:var(--alarm-ink);--ink-2:var(--alarm-ink-2);
   --rule:rgba(255,255,255,.45);--track:rgba(255,255,255,.25);--btn:var(--alarm-ink);--btn-ink:var(--alarm-deep)}
-.sos-bar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:center;
-  padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px));background:var(--sky-bottom);box-shadow:0 -6px 18px rgba(0,0,0,.18)}
-.sos{appearance:none;width:100%;max-width:520px;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:60px;
-  border-radius:999px;border:2px solid var(--sos-edge);background:var(--sos);color:var(--sos-ink);font-weight:800;font-size:21px;
-  letter-spacing:.02em;cursor:pointer;touch-action:manipulation}
-.sos svg{width:24px;height:24px}
-body.has-sos .app{padding-bottom:100px}
+.e-grid{display:grid;gap:22px}
+.e-main,.e-side{display:flex;flex-direction:column;gap:18px;min-width:0}
+@media (min-width:900px){.e-grid.with-side{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
 .e-source{margin:-8px 0 0;font-size:14px;color:var(--ink-2)}
 .e-clocks{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .e-clock{display:flex;flex-direction:column;gap:2px}
@@ -274,6 +223,7 @@ body.has-sos .app{padding-bottom:100px}
 .e-stepno{font-size:15px;font-weight:700}
 .e-current h2{font-size:clamp(26px,7vw,34px);line-height:1.1}
 .e-current ul{margin:4px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:18px;line-height:1.4}
+.e-current p{margin:0;font-size:18px;line-height:1.4}
 .e-nav{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .e-next{grid-column:1 / -1;min-height:84px;font-size:clamp(24px,6.5vw,30px);font-weight:800}
 .e-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
@@ -282,7 +232,8 @@ body.has-sos .app{padding-bottom:100px}
 .e-no{display:inline-grid;place-items:center;flex:none;width:30px;height:30px;border-radius:50%;border:2px solid currentColor;font-size:15px;font-weight:800}
 .e-step.current{background:var(--alarm-ink);border-color:var(--alarm-ink);color:var(--alarm-deep)}
 .e-step.done{opacity:.6}
-.e-spo2 td{text-align:left}
+.e-spo2{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.e-spo2 td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--panel-rule)}
 .e-spo2 tr.now td{color:var(--due);font-weight:800}
 
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
@@ -290,14 +241,14 @@ body.has-sos .app{padding-bottom:100px}
 
 <div class="app" id="app">
   <header class="topbar">
-    <span class="brand"><img src="logo-lockup.png" alt="BirthWatch" width="168" height="44" class="brand-logo"></span>
+    <img src="logo-lockup.png" alt="BirthWatch" width="168" height="44" class="brand-logo">
     <button type="button" id="themeBtn" class="ghost" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>Nachtmodus</button>
   </header>
 
   <main>
-    <!-- 1 · Geburt anlegen -->
+    <!-- 1 · Daten eingeben -->
     <section id="screen-start" class="screen" aria-labelledby="startTitle">
-      <div class="meta-row"><span>Schritt 1 von 2</span><span class="status">Bereit</span></div>
+      <div class="meta-row"><span>Neue Geburt</span><span class="status">Bereit</span></div>
       <h1 id="startTitle">Geburt anlegen</h1>
 
       <div class="start-grid">
@@ -353,141 +304,140 @@ body.has-sos .app{padding-bottom:100px}
       </div>
     </section>
 
-    <!-- 2 · Geburtsvorgang -->
-    <section id="screen-birth" class="screen" aria-labelledby="bTitle" hidden>
-      <div class="meta-row"><span id="bMeta"></span><span id="bStatus" class="status"></span></div>
-      <h1 id="bTitle"></h1>
-      <button type="button" id="banner" class="banner" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9.5"/></svg><span id="bannerText"></span></button>
-      <p id="soundNote" class="sound-note" hidden>Einmal auf den Bildschirm tippen, damit Signalton und Ansage funktionieren.</p>
-
-      <div class="birth-grid">
-        <div class="col-main">
-          <div class="clock">
-            <div id="date" class="date"></div>
-            <div class="time" aria-label="Uhrzeit"><span id="hm">--:--</span><span id="ss" class="sec">--</span></div>
-          </div>
-
-          <div id="preBirth" class="stack">
-            <button type="button" id="bornBtn" class="btn btn-primary btn-born">Geburt erfolgt</button>
-            <p class="note center">Im Moment der Geburt antippen. Datum und Uhrzeit werden sekundengenau vermerkt.</p>
-          </div>
-
-          <div id="postBirth" class="since" hidden>
-            <p class="born-line">Geburt am <span id="bornDate"></span> um <strong id="bornAt"></strong> Uhr</p>
-            <div class="timer-label">Seit Geburt</div>
-            <div id="timer" class="timer" role="timer">00 : 00</div>
-            <div class="bar" role="progressbar" aria-label="Zeit bis zur nächsten Bewertung" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="barFill"></span></div>
-            <p id="nextLine" class="next"></p>
-            <div class="links">
-              <button type="button" id="undoBtn" class="link" hidden>Rückgängig (versehentlich getippt)</button>
-              <button type="button" id="adjustBtn" class="link">Geburtszeit korrigieren</button>
-            </div>
-            <form id="adjustForm" class="adjust" hidden>
-              <label for="adjustTime" class="label-ink">Tatsächliche Geburtszeit</label>
-              <div class="adjust-row">
-                <input id="adjustTime" type="time" step="1" class="time-input" required>
-                <button type="submit" class="btn btn-primary btn-sm">Übernehmen</button>
-                <button type="button" id="adjustCancel" class="btn btn-outline btn-sm">Abbrechen</button>
-              </div>
-            </form>
-          </div>
-
-          <div class="actions">
-            <button type="button" id="backBtn" class="btn btn-outline">Zurück</button>
-            <button type="button" id="closeBtn" class="btn btn-outline">Abschließen</button>
-          </div>
-          <p id="wakeNote" class="note"></p>
+    <!-- 2 · Geburt oder Notfall -->
+    <section id="screen-choice" class="screen" aria-labelledby="cTitle" hidden>
+      <div class="wrap">
+        <h1 id="cTitle" class="sr-only">Geburt oder Notfall</h1>
+        <p id="cMeta" class="choice-meta"></p>
+        <div class="choice">
+          <button type="button" id="choiceBirth" class="tile tile-birth"><span class="tile-label">Geburt</span><span id="choiceBirthSub" class="tile-sub">Uhrzeit wird beim Antippen vermerkt</span></button>
+          <button type="button" id="choiceSos" class="tile tile-sos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20.5h20L12 3z"/><path d="M12 10v4.5M12 17.5v.5"/></svg><span class="tile-label">Notfall</span><span class="tile-sub">bei der Geburt</span></button>
         </div>
-
-        <div class="col-side">
-          <div class="side-head"><h2>APGAR</h2><span class="note">je 0–2 Punkte · Summe 0–10</span></div>
-          <p id="apgarIntro" class="panel intro">Nach „Geburt erfolgt“ läuft der Timer. Nach 1, 5 und 10 Minuten kommen drei Signaltöne und eine Ansage. Die Werte lassen sich antippen oder einsprechen.</p>
-          <div id="cardsBirth" class="cards"></div>
+        <div class="actions">
+          <button type="button" id="cBack" class="btn btn-outline">Zurück</button>
+          <button type="button" id="cCancel" class="btn btn-outline">Abbrechen</button>
         </div>
       </div>
     </section>
 
-    <!-- Notfall · Neugeborenen-Reanimation -->
+    <!-- 3 · Seit Geburt -->
+    <section id="screen-birth" class="screen" aria-labelledby="bTitle" hidden>
+      <div class="wrap">
+        <h1 id="bTitle" class="sr-only">Seit Geburt</h1>
+        <div id="banner" class="banner" role="status" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9.5"/></svg><span id="bannerText"></span></div>
+        <p id="soundNote" class="sound-note" hidden>Einmal auf den Bildschirm tippen, damit Signalton und Ansage funktionieren.</p>
+
+        <div class="b-top">
+          <p class="born-line">Geburt am <span id="bornDate"></span><strong><span id="bornAt"></span> Uhr</strong></p>
+          <div class="b-now">
+            <div id="date" class="date"></div>
+            <div class="now-time" aria-label="Uhrzeit"><span id="hm">--:--</span><span id="ss" class="sec">--</span></div>
+          </div>
+        </div>
+
+        <div class="b-center">
+          <div class="timer-label">Seit Geburt</div>
+          <div id="timer" class="timer" role="timer">00 : 00</div>
+        </div>
+        <div class="bar" role="progressbar" aria-label="Zeit bis zur nächsten Bewertung" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="barFill"></span></div>
+        <p id="nextLine" class="next"></p>
+        <div class="links">
+          <button type="button" id="undoBtn" class="link" hidden>Rückgängig (versehentlich getippt)</button>
+          <button type="button" id="adjustBtn" class="link">Geburtszeit korrigieren</button>
+        </div>
+        <form id="adjustForm" class="adjust" hidden>
+          <label for="adjustTime" class="label-ink">Tatsächliche Geburtszeit</label>
+          <div class="adjust-row">
+            <input id="adjustTime" type="time" step="1" class="time-input" required>
+            <button type="submit" class="btn btn-primary btn-sm">Übernehmen</button>
+            <button type="button" id="adjustCancel" class="btn btn-outline btn-sm">Abbrechen</button>
+          </div>
+        </form>
+
+        <div class="actions">
+          <button type="button" id="backBtn" class="btn btn-outline">Zurück</button>
+          <button type="button" id="closeBtn" class="btn btn-outline">Abschließen</button>
+        </div>
+        <button type="button" id="sosAfter" class="sos sos-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20.5h20L12 3z"/><path d="M12 10v4.5M12 17.5v.5"/></svg>Notfall</button>
+        <p id="wakeNote" class="note"></p>
+      </div>
+    </section>
+
+    <!-- Notfall (bei der Geburt: Platzhalter · nach der Geburt: Neugeborenen-Reanimation) -->
     <section id="screen-emergency" class="screen" aria-labelledby="eTitle" hidden>
       <div class="meta-row"><span id="eMeta"></span><span class="status">Notfall</span></div>
-      <h1 id="eTitle">Neugeborenen-Reanimation</h1>
-      <p class="e-source">Gedächtnisstütze nach ERC-Leitlinie 2025. Klinikstandard und Ausbildung haben Vorrang.</p>
-      <div class="birth-grid">
-        <div class="col-main">
+      <h1 id="eTitle"></h1>
+      <p id="eSource" class="e-source"></p>
+      <div id="eGrid" class="e-grid">
+        <div class="e-main">
           <div class="e-clocks">
             <div class="e-clock"><span class="timer-label">Seit Notfall</span><b id="eTimer">00 : 00</b></div>
             <div class="e-clock"><span class="timer-label">Seit Geburt</span><b id="eSince">–</b></div>
           </div>
           <button type="button" id="eBornBtn" class="btn btn-outline btn-wide" hidden>Geburtszeit jetzt setzen</button>
-          <div class="e-cycle">
-            <p id="eCycleText" class="next"></p>
-            <div class="bar" aria-hidden="true"><span id="eCycleFill"></span></div>
-            <label class="e-toggle" for="eTick"><input type="checkbox" id="eTick" checked>Signalton alle 30 Sekunden</label>
-          </div>
           <p id="eApgarNote" class="sound-note" hidden></p>
-          <div class="e-current" aria-live="polite">
-            <span id="eStepNo" class="e-stepno"></span>
-            <h2 id="eStepTitle"></h2>
-            <ul id="eStepDetail"></ul>
+          <div id="ePlaceholder" class="e-current" hidden>
+            <h2>Maßnahmen folgen</h2>
+            <p>Die Schritte für diesen Notfall werden gemeinsam mit der Klinik festgelegt und hier hinterlegt. Bis dahin: Klinikstandard.</p>
           </div>
-          <div class="e-nav">
-            <button type="button" id="eNext" class="btn btn-primary e-next">Nächster Schritt</button>
-            <button type="button" id="ePrev" class="btn btn-outline">Zurück</button>
-            <button type="button" id="eRepeat" class="btn btn-outline">Wiederholen</button>
+          <div id="eNlsMain" class="e-main">
+            <div class="e-cycle">
+              <p id="eCycleText" class="next"></p>
+              <div class="bar" aria-hidden="true"><span id="eCycleFill"></span></div>
+              <label class="e-toggle" for="eTick"><input type="checkbox" id="eTick" checked>Signalton alle 30 Sekunden</label>
+            </div>
+            <div class="e-current" aria-live="polite">
+              <span id="eStepNo" class="e-stepno"></span>
+              <h2 id="eStepTitle"></h2>
+              <ul id="eStepDetail"></ul>
+            </div>
+            <div class="e-nav">
+              <button type="button" id="eNext" class="btn btn-primary e-next">Nächster Schritt</button>
+              <button type="button" id="ePrev" class="btn btn-outline">Zurück</button>
+              <button type="button" id="eRepeat" class="btn btn-outline">Wiederholen</button>
+            </div>
           </div>
           <button type="button" id="eEndBtn" class="btn btn-outline btn-wide">Notfall beenden</button>
         </div>
-        <div class="col-side">
+        <div id="eNlsSide" class="e-side">
           <h2>Alle Schritte</h2>
           <ol id="eSteps" class="e-steps"></ol>
           <div class="panel">
             <span class="label">Ziel-Sättigung präduktal (rechte Hand)</span>
-            <table class="scores e-spo2"><tbody id="eSpo2"></tbody></table>
+            <table class="e-spo2"><tbody id="eSpo2"></tbody></table>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 3 · Protokoll -->
+    <!-- Protokoll -->
     <section id="screen-summary" class="screen" aria-labelledby="sTitle" hidden>
       <div class="meta-row"><span id="sMeta"></span><span class="status">Abgeschlossen</span></div>
       <h1 id="sTitle">Protokoll</h1>
       <div class="sum-grid">
-        <div class="stack">
-          <div class="panel">
-            <span class="label">APGAR 1 / 5 / 10 Min.</span>
-            <div id="sApgar" class="apgar-big"></div>
-            <dl class="kv">
-              <dt>Geburten-ID</dt><dd id="sId"></dd>
-              <dt>Kreißsaal</dt><dd id="sRoom"></dd>
-              <dt>Geburt</dt><dd id="sBorn"></dd>
-              <dt>Abgeschlossen</dt><dd id="sClosed"></dd>
-              <dt id="sSosL" hidden>Notfall</dt><dd id="sSos" hidden></dd>
-            </dl>
-          </div>
-          <div class="panel table-wrap"><table id="sTable" class="scores"></table></div>
+        <div class="panel">
+          <dl class="kv">
+            <dt>Geburten-ID</dt><dd id="sId"></dd>
+            <dt>Kreißsaal</dt><dd id="sRoom"></dd>
+            <dt>Geburt</dt><dd id="sBorn"></dd>
+            <dt>APGAR-Zeitpunkte</dt><dd id="sApgar"></dd>
+            <dt>Abgeschlossen</dt><dd id="sClosed"></dd>
+            <dt id="sSosL" hidden>Notfall</dt><dd id="sSos" hidden></dd>
+          </dl>
         </div>
         <div class="stack">
           <span class="label-ink">Text für die Dokumentation</span>
           <pre id="protoText" class="proto"></pre>
           <div class="actions">
             <button type="button" id="copyBtn" class="btn btn-primary">Kopieren</button>
-            <button type="button" id="editBtn" class="btn btn-outline" aria-expanded="false" aria-controls="cardsSummary">Werte bearbeiten</button>
+            <button type="button" id="newBtn" class="btn btn-outline">Neue Geburt</button>
           </div>
           <p id="copyMsg" class="note" aria-live="polite"></p>
-          <div id="cardsSummary" class="cards" hidden></div>
-          <div class="actions">
-            <button type="button" id="newBtn" class="btn btn-outline">Neue Geburt</button>
-            <button type="button" id="deleteBtn" class="btn btn-outline">Löschen</button>
-          </div>
+          <button type="button" id="deleteBtn" class="btn btn-outline btn-wide">Löschen</button>
         </div>
       </div>
     </section>
   </main>
-
-  <div id="sosBar" class="sos-bar" hidden>
-    <button type="button" id="sosBtn" class="sos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20.5h20L12 3z"/><path d="M12 10v4.5M12 17.5v.5"/></svg>Notfall</button>
-  </div>
 
   <p class="foot">Hilfsmittel zur Zeitkontrolle. Ersetzt weder die klinische Beurteilung noch die Dokumentation. Daten bleiben auf diesem Gerät.</p>
 </div>
@@ -501,18 +451,10 @@ const $ = (s, r) => (r || document).querySelector(s);
 const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 const KEY = 'geburtsuhr.v1', THEME_KEY = 'geburtsuhr.theme', KEEP_DAYS = 7;
 const MS = [1, 5, 10];
-const CRIT = [
-  {k:'at', letter:'A', name:'Atmung',     opts:['keine', 'unregel\u00admäßig, flach', 'regel\u00admäßig, kräftiges Schreien']},
-  {k:'pu', letter:'P', name:'Puls',       opts:['kein Puls', 'unter 100/min', '100/min und mehr']},
-  {k:'to', letter:'G', name:'Grundtonus', opts:['schlaff', 'leichte Beugung', 'aktive Bewegung']},
-  {k:'ha', letter:'A', name:'Aussehen',   opts:['blau oder blass', 'Stamm rosig, Extremi\u00adtäten blau', 'vollständig rosig']},
-  {k:'re', letter:'R', name:'Reflexe',    opts:['keine Reaktion', 'Grimas\u00adsieren', 'Schreien, Husten, Niesen']},
-];
 const ORD = {1:'Erste', 5:'Fünfte', 10:'Zehnte'};
-const ANSAGE = m => `${ORD[m]} Minute ${m === 1 ? 'seit' : 'nach'} der Geburt ist vorbei. Jetzt bitte folgende Werte nehmen: ` +
-  'Atmung, Puls, Grundtonus, Aussehen und Reflexe. Je null bis zwei Punkte.';
-const MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
-const CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+// Anzeige schreibt APGAR, die Sprachausgabe sagt „Apgar“ (sonst buchstabiert die Stimme A-P-G-A-R)
+const ANSAGE = m => `${ORD[m]} Minute seit der Geburt ist vorbei. Jetzt bitte die Bewertung nach Apgar durchführen.`;
+const BANNER_MS = 60000;
 
 /* ---------- Speicher (nur lokal auf dem Gerät) ---------- */
 let store = {births: [], activeUid: null};
@@ -530,28 +472,13 @@ const byUid = uid => store.births.find(b => b.uid === uid) || null;
 const active = () => { const b = store.activeUid && byUid(store.activeUid); return b && !b.closedAt ? b : null; };
 function newBirth(gid, room){
   return {uid: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), gid, room, createdAt: Date.now(),
-    bornAt: null, closedAt: null, apgar: {1:{}, 5:{}, 10:{}}, doneAt: {1:null, 5:null, 10:null}, announced: {1:false, 5:false, 10:false}};
+    bornAt: null, closedAt: null, announced: {1:false, 5:false, 10:false}, notfall: []};
 }
 function removeBirth(uid){
   store.births = store.births.filter(b => b.uid !== uid);
   if (store.activeUid === uid) store.activeUid = null;
   save();
 }
-
-/* ---------- Apgar-Rechnung ---------- */
-const count = s => CRIT.filter(c => s[c.k] != null).length;
-const total = s => CRIT.reduce((a, c) => a + (s[c.k] != null ? s[c.k] : 0), 0);
-const complete = s => count(s) === 5;
-const band = t => t >= 7 ? {cls:'ok', text:'unauffällig'} : t >= 4 ? {cls:'warn', text:'mäßig auffällig'} : {cls:'crit', text:'kritisch niedrig'};
-const apgarLine = b => MS.map(m => complete(b.apgar[m]) ? total(b.apgar[m]) : '–').join(' / ');
-function applyScores(b, m, vals){
-  const s = b.apgar[m];
-  if (Object.keys(vals).some(k => s[k] !== vals[k])) b.doneAt[m] = null;   // geänderte Werte müssen neu bestätigt werden
-  Object.assign(s, vals);
-  save();
-}
-const confirmed = (b, m) => complete(b.apgar[m]) && !!b.doneAt[m];
-const setScore = (b, m, k, v) => applyScores(b, m, {[k]: v});
 
 /* ---------- Formatierung ---------- */
 const pad = n => String(n).padStart(2, '0');
@@ -639,199 +566,15 @@ function updateWakeNote(){
   setText($('#wakeNote'), wake ? 'Bildschirm bleibt eingeschaltet.' : 'Bitte die automatische Bildschirmsperre ausschalten. Ton und Ansage kommen nur bei eingeschaltetem Bildschirm.');
 }
 
-/* ---------- Spracheingabe ---------- */
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
-const NUMW = {'null':0, '0':0, 'eins':1, 'ein':1, 'eine':1, 'einen':1, 'einer':1, '1':1, 'zwei':2, 'zwo':2, '2':2};
-const KEYW = [
-  ['at', /^(atmung|atem|atmen|atmet|atemanstrengung)/],
-  ['pu', /^(puls|herz|herzfrequenz|herzschlag|frequenz)/],
-  ['to', /^(grundtonus|tonus|muskel|muskeltonus|spannung|aktivität)/],
-  ['ha', /^(aussehen|haut|hautfarbe|farbe|kolorit)/],
-  ['re', /^(reflex|reflexe|reflexerregbarkeit|reaktion|grimasse|grimassieren)/],
-];
-function parseApgar(text){
-  const toks = String(text).toLowerCase()
-    .replace(/(unter|weniger als)\s*(hundert|100)/g, ' 1 ').replace(/(über|mehr als)\s*(hundert|100)/g, ' 2 ')
-    .replace(/[^a-zäöüß0-9]+/g, ' ').trim().split(' ').filter(Boolean);
-  const out = {}, loose = [];
-  let pend = null;
-  for (const t of toks){
-    const key = KEYW.find(([, re]) => re.test(t));
-    if (key){ pend = key[0]; continue; }
-    if (t in NUMW){
-      if (pend && !(pend in out)){ out[pend] = NUMW[t]; pend = null; } else loose.push(NUMW[t]);
-      continue;
-    }
-    if (/^\d+$/.test(t)){
-      if (pend === 'pu' && !('pu' in out)) out.pu = +t >= 100 ? 2 : +t > 0 ? 1 : 0;   // "Puls 120" -> 2 Punkte
-      pend = null;
-    }
-  }
-  if (!Object.keys(out).length){
-    if (loose.length === 5) CRIT.forEach((c, i) => { out[c.k] = loose[i]; });
-    else if (loose.length === 1 && toks.some(t => /^(alle|alles|überall|jeweils)$/.test(t))) CRIT.forEach(c => { out[c.k] = loose[0]; });
-  }
-  return out;
+/* ---------- Zwei-Schritt-Bestätigung ---------- */
+function arm(btn, label, action){
+  if (btn.dataset.armed === '1'){ disarm(btn); action(); return; }
+  btn.dataset.armed = '1'; btn.dataset.label = btn.textContent; btn.textContent = label; btn.classList.add('armed');
+  clearTimeout(btn._t); btn._t = setTimeout(() => disarm(btn), 4000);
 }
-let rec = null, recBtn = null;
-function stopListening(){ if (rec){ try { rec.abort(); } catch (e) {} } }
-function toggleListen(container, m, btn){
-  if (rec){ const same = recBtn === btn; stopListening(); if (same) return; }
-  if (!SR) return;
-  const card = btn.closest('.card'), msg = card.querySelector('[data-role=vmsg]'), lbl = btn.querySelector('span');
-  try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) {}
-  let r;
-  try { r = new SR(); } catch (e) { msg.textContent = 'Spracheingabe ist hier nicht verfügbar. Bitte Werte antippen.'; return; }
-  r.lang = 'de-DE'; r.interimResults = true; r.continuous = false; r.maxAlternatives = 3;
-  rec = r; recBtn = btn; btn.classList.add('listening'); lbl.textContent = 'Hört zu …';
-  msg.textContent = 'Zum Beispiel: „Atmung 2, Puls 2, Tonus 1, Aussehen 1, Reflexe 2“ oder fünf Zahlen in dieser Reihenfolge.';
-  let finalText = '', err;
-  r.onresult = ev => {
-    let interim = '';
-    for (let i = ev.resultIndex; i < ev.results.length; i++){
-      const res = ev.results[i];
-      if (res.isFinal){
-        let pick = res[0].transcript, n = Object.keys(parseApgar(pick)).length;
-        for (let j = 1; j < res.length; j++){
-          const nj = Object.keys(parseApgar(res[j].transcript)).length;
-          if (nj > n){ n = nj; pick = res[j].transcript; }
-        }
-        finalText += ' ' + pick;
-      } else interim += res[0].transcript;
-    }
-    msg.textContent = '„' + (finalText + ' ' + interim).trim() + '“';
-  };
-  r.onerror = ev => {
-    const map = {
-      'not-allowed': 'Mikrofon nicht freigegeben. In dieser Ansicht ist die Spracheingabe gesperrt. Bitte Werte antippen.',
-      'service-not-allowed': 'Spracherkennung ist in diesem Browser gesperrt. Bitte Werte antippen.',
-      'no-speech': 'Nichts gehört. Bitte noch einmal versuchen.',
-      'network': 'Die Spracherkennung dieses Browsers braucht Internet. Bitte Werte antippen.',
-      'audio-capture': 'Kein Mikrofon gefunden. Bitte Werte antippen.',
-      'aborted': '',
-    };
-    err = ev.error in map ? map[ev.error] : 'Spracheingabe fehlgeschlagen. Bitte Werte antippen.';
-  };
-  r.onend = () => {
-    btn.classList.remove('listening'); lbl.textContent = 'Einsprechen'; rec = null; recBtn = null;
-    if (err !== undefined){ if (err) msg.textContent = err; return; }
-    const said = finalText.trim(), parsed = parseApgar(said), n = Object.keys(parsed).length;
-    if (!n){ msg.textContent = said ? `„${said}“ – keine Werte erkannt. Bitte noch einmal oder antippen.` : 'Nichts verstanden. Bitte noch einmal versuchen.'; return; }
-    const b = byUid(container.dataset.uid); if (!b) return;
-    applyScores(b, m, parsed);
-    updateCards(container, b); afterScoreChange(b);
-    const voll = complete(b.apgar[m]);
-    msg.textContent = `„${said}“ → ${n} von 5 Werten übernommen. ` + (voll ? 'Bitte prüfen und bestätigen.' : 'Bitte ergänzen.');
-    say(voll ? `Alle Werte erkannt. Summe ${total(b.apgar[m])}. Bitte prüfen und bestätigen.` : `${count(b.apgar[m])} von 5 Werten erkannt. Bitte ergänzen.`);
-  };
-  try { r.start(); }
-  catch (e) { btn.classList.remove('listening'); lbl.textContent = 'Einsprechen'; rec = null; recBtn = null; msg.textContent = 'Spracheingabe konnte nicht starten. Bitte Werte antippen.'; }
-}
-
-/* ---------- Apgar-Karten ---------- */
-function cardHTML(m, pfx){
-  const id = `${pfx}-${m}`;
-  return `<article class="card" data-m="${m}">
-    <button type="button" class="card-head" aria-expanded="false" aria-controls="${id}-body">
-      <span class="card-title">${minLabel(m)}</span><span class="card-sub" data-role="sub"></span><span class="chip" data-role="chip"></span>${CHEV}
-    </button>
-    <div class="card-body" id="${id}-body" hidden>
-      ${CRIT.map(c => `<div class="crit" role="group" aria-labelledby="${id}-${c.k}">
-        <div class="crit-name" id="${id}-${c.k}"><span class="crit-letter" aria-hidden="true">${c.letter}</span>${c.name}</div>
-        <div class="opts">${c.opts.map((t, v) => `<button type="button" class="opt" data-k="${c.k}" data-v="${v}" aria-pressed="false"><b>${v}</b><span>${t}</span></button>`).join('')}</div>
-      </div>`).join('')}
-      <div class="card-foot">
-        <div class="sum"><span class="sum-label">Summe</span><b data-role="sum">–</b><span class="sum-max">/ 10</span></div>
-        <button type="button" class="btn btn-mic" data-role="mic">${MIC}<span>Einsprechen</span></button>
-      </div>
-      <p class="voice-msg" data-role="vmsg" aria-live="polite"></p>
-      <p class="card-hint" data-role="hint" hidden></p>
-      <button type="button" class="btn btn-confirm" data-role="ok" disabled>Werte bestätigen</button>
-    </div>
-  </article>`;
-}
-function buildCards(container, b){
-  container.dataset.uid = b.uid;
-  container.innerHTML = MS.map(m => cardHTML(m, container.id)).join('');
-  updateCards(container, b);
-}
-function updateCards(container, b){
-  const now = Date.now();
-  const latestPassed = b.bornAt ? [...MS].reverse().find(m => now >= b.bornAt + m * 60000) : null;
-  for (const card of $$('.card', container)){
-    const m = +card.dataset.m, s = b.apgar[m], n = count(s), due = b.bornAt ? b.bornAt + m * 60000 : null;
-    let state = 'planned', chip = 'geplant', cls = '';
-    const conf = confirmed(b, m);
-    if (conf){ const t = total(s), bd = band(t); state = 'done'; chip = `${t} · ${bd.text}`; cls = 'chip-' + bd.cls; }
-    else if (n === 5){ state = 'due'; chip = 'bitte bestätigen'; cls = 'chip-due'; }
-    else if (due && now >= due && !b.closedAt){ state = 'due'; chip = (m === latestPassed ? 'jetzt erheben' : 'nachtragen') + (n ? ` · ${n}/5` : ''); cls = 'chip-due'; }
-    else if (n){ chip = `${n}/5 erfasst`; }
-    else if (b.closedAt){ chip = 'nicht erfasst'; }
-    else if (!b.bornAt){ chip = 'nach Geburt'; }
-    card.dataset.state = state;
-    const c = card.querySelector('[data-role=chip]'); setText(c, chip); c.className = 'chip ' + cls;
-    setText(card.querySelector('[data-role=sub]'), !due ? 'startet mit der Geburt' : conf ? 'bestätigt ' + fmtHMS(b.doneAt[m]) : 'fällig ' + fmtHMS(due));
-    for (const o of $$('.opt', card)){
-      o.setAttribute('aria-pressed', String(s[o.dataset.k] === +o.dataset.v));
-      o.disabled = !b.bornAt;
-    }
-    setText(card.querySelector('[data-role=sum]'), n === 5 ? String(total(s)) : '–');
-    const hint = card.querySelector('[data-role=hint]'), low = n === 5 && total(s) < 7 && m >= 5;
-    hint.hidden = !low;
-    if (low) setText(hint, 'Wert unter 7: Laut AAP/ACOG weitere Bewertungen alle 5 Minuten bis 20 Minuten nach der Geburt.');
-    const mic = card.querySelector('[data-role=mic]'); mic.hidden = !SR; mic.disabled = !b.bornAt;
-    const ok = card.querySelector('[data-role=ok]');
-    ok.disabled = !b.bornAt || n < 5 || conf;
-    setText(ok, conf ? 'Bestätigt' : n === 5 ? 'Werte bestätigen' : `Noch ${5 - n} ${5 - n === 1 ? 'Wert' : 'Werte'} offen`);
-  }
-}
-function openCard(container, m, scroll){
-  const card = $(`.card[data-m="${m}"]`, container); if (!card) return;
-  const head = $('.card-head', card);
-  head.setAttribute('aria-expanded', 'true'); $('.card-body', card).hidden = false;
-  if (scroll){
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (window.innerWidth < 900) card.scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block: 'start'});
-  }
-}
-function onCardsClick(e){
-  const container = e.currentTarget, b = byUid(container.dataset.uid); if (!b) return;
-  const head = e.target.closest('.card-head');
-  if (head){
-    const open = head.getAttribute('aria-expanded') !== 'true';
-    head.setAttribute('aria-expanded', String(open)); $('.card-body', head.closest('.card')).hidden = !open;
-    return;
-  }
-  const opt = e.target.closest('.opt');
-  if (opt && !opt.disabled){
-    const m = +opt.closest('.card').dataset.m, k = opt.dataset.k, v = +opt.dataset.v;
-    setScore(b, m, k, v);
-    updateCards(container, b); afterScoreChange(b);
-    return;
-  }
-  const ok = e.target.closest('[data-role=ok]');
-  if (ok && !ok.disabled){ confirmCard(container, b, +ok.closest('.card').dataset.m); return; }
-  const mic = e.target.closest('[data-role=mic]');
-  if (mic && !mic.disabled) toggleListen(container, +mic.closest('.card').dataset.m, mic);
-}
-$('#cardsBirth').addEventListener('click', onCardsClick);
-$('#cardsSummary').addEventListener('click', onCardsClick);
-// „Werte bestätigen“: Zeit festhalten, Ansage, Karte schließen
-function confirmCard(container, b, m){
-  if (!complete(b.apgar[m]) || b.doneAt[m]) return;
-  b.wasConfirmed = b.wasConfirmed || {};
-  const again = !!b.wasConfirmed[m];
-  b.doneAt[m] = Date.now(); b.wasConfirmed[m] = true; save();
-  say(`Apgar nach ${m === 1 ? 'einer Minute' : m + ' Minuten'} ${again ? 'geändert' : 'eingetragen'}. Summe ${total(b.apgar[m])}.`);
-  const card = $(`.card[data-m="${m}"]`, container);
-  card.querySelector('.card-head').setAttribute('aria-expanded', 'false');
-  card.querySelector('.card-body').hidden = true;
-  updateCards(container, b); afterScoreChange(b);
-  if (window.innerWidth < 900) card.scrollIntoView({block: 'nearest'});
-}
-function afterScoreChange(b){
-  updateBanner();
-  if (view === 'summary' && viewUid === b.uid) renderSummaryData(b);
+function disarm(btn){
+  if (btn.dataset.armed === '1') btn.textContent = btn.dataset.label;
+  btn.dataset.armed = ''; btn.classList.remove('armed'); clearTimeout(btn._t);
 }
 
 /* ---------- Ansichten ---------- */
@@ -841,15 +584,15 @@ function show(name, uid){
   for (const s of $$('.screen')) s.hidden = s.id !== 'screen-' + name;
   document.body.classList.toggle('alarm', name === 'emergency');
   if (name === 'start') renderStart();
+  if (name === 'choice') renderChoice();
   if (name === 'birth') renderBirth();
-  if (name === 'summary') renderSummary();
   if (name === 'emergency') renderEmergency();
-  updateSos();
+  if (name === 'summary') renderSummary();
   window.scrollTo(0, 0);
   tick();
 }
 
-/* 1 · Start */
+/* 1 · Daten eingeben */
 const gidIn = $('#gid');
 function validateStart(){
   const v = gidIn.value.trim();
@@ -873,7 +616,7 @@ function renderHistory(){
     btn.type = 'button'; btn.className = 'hist'; btn.dataset.uid = b.uid;
     const id = document.createElement('span'); id.className = 'hist-id'; id.textContent = b.gid;
     const meta = document.createElement('span'); meta.className = 'hist-meta';
-    meta.textContent = `Kreißsaal ${b.room} · ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt).slice(0, 5) : 'vor der Geburt'} · APGAR ${apgarLine(b)}`;
+    meta.textContent = `Kreißsaal ${b.room} · ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt).slice(0, 5) + ' Uhr' : 'vor der Geburt'}`;
     const chip = document.createElement('span'); chip.className = 'chip' + (running ? ' chip-due' : ''); chip.textContent = running ? 'läuft' : 'abgeschlossen';
     btn.append(id, meta, chip); li.append(btn); ul.append(li);
   }
@@ -891,13 +634,13 @@ $('#startForm').addEventListener('submit', e => {
   store.births.push(b); store.activeUid = b.uid; save();
   gidIn.value = ''; $$('input[name=room]').forEach(r => { r.checked = false; });
   keepAwake();
-  show('birth', b.uid);
+  show('choice', b.uid);
 });
-$('#resumeBtn').addEventListener('click', () => { const a = active(); if (a){ unlockAudio(); keepAwake(); show('birth', a.uid); } });
+$('#resumeBtn').addEventListener('click', () => { const a = active(); if (a){ unlockAudio(); keepAwake(); show(a.bornAt ? 'birth' : 'choice', a.uid); } });
 $('#historyList').addEventListener('click', e => {
   const btn = e.target.closest('.hist'); if (!btn) return;
   const b = byUid(btn.dataset.uid); if (!b) return;
-  show(b.closedAt ? 'summary' : 'birth', b.uid);
+  show(b.closedAt ? 'summary' : (b.bornAt ? 'birth' : 'choice'), b.uid);
 });
 $('#testBtn').addEventListener('click', () => {
   unlockAudio();
@@ -908,34 +651,51 @@ $('#testBtn').addEventListener('click', () => {
   queueSound(async () => { await beep(); await wait(300); await say('Ton und Ansage funktionieren.'); });
 });
 
-/* 2 · Geburtsvorgang */
+/* 2 · Geburt oder Notfall */
+function renderChoice(){
+  const b = byUid(viewUid); if (!b){ show('start'); return; }
+  setText($('#cMeta'), `${b.gid} · Kreißsaal ${b.room}`);
+  $('#cCancel').hidden = !!b.bornAt;              // eine vermerkte Geburt wird nicht über „Abbrechen“ gelöscht
+  disarm($('#cCancel'));
+}
+$('#choiceBirth').addEventListener('click', () => {
+  const t = Date.now(), b = byUid(viewUid); if (!b) return;
+  unlockAudio();
+  if (!b.bornAt){
+    b.bornAt = t; b.announced = {1:false, 5:false, 10:false};
+    store.activeUid = b.uid; save();
+    queueSound(() => say('Geburtszeit erfasst.'));
+  }
+  keepAwake();
+  show('birth', b.uid);
+});
+$('#choiceSos').addEventListener('click', () => startEmergency('geburt'));
+$('#cBack').addEventListener('click', () => show('start'));
+$('#cCancel').addEventListener('click', e => {
+  const b = byUid(viewUid); if (!b) return;
+  arm(e.currentTarget, 'Wirklich abbrechen?', () => { removeBirth(b.uid); show('start'); });
+});
+
+/* 3 · Seit Geburt */
+let banner = null;   // {uid, m, until}
 function renderBirth(){
   const b = byUid(viewUid); if (!b){ show('start'); return; }
-  $('#bMeta').textContent = 'Geb.-ID ' + b.gid;
-  $('#bTitle').textContent = 'Kreißsaal ' + b.room;
-  $('#preBirth').hidden = !!b.bornAt;
-  $('.clock').classList.toggle('compact', !!b.bornAt);
-  $('#postBirth').hidden = !b.bornAt;
-  $('#apgarIntro').hidden = !!b.bornAt;
+  if (!b.bornAt){ show('choice', b.uid); return; }
+  $('#bornDate').textContent = fmtDate(b.bornAt);
+  $('#bornAt').textContent = fmtHMS(b.bornAt);
   $('#adjustForm').hidden = true;
-  const cb = $('#closeBtn'); disarm(cb); cb.textContent = b.bornAt ? 'Abschließen' : 'Abbrechen';
-  if (b.bornAt){ $('#bornAt').textContent = fmtHMS(b.bornAt); $('#bornDate').textContent = fmtDate(b.bornAt); }
-  buildCards($('#cardsBirth'), b);
+  disarm($('#closeBtn'));
   updateBanner(); updateWakeNote();
 }
-$('#bornBtn').addEventListener('click', () => {
-  const t = Date.now(), b = byUid(viewUid);
-  if (!b || b.bornAt) return;
-  unlockAudio();
-  b.bornAt = t; b.announced = {1:false, 5:false, 10:false};
-  store.activeUid = b.uid; save();
-  renderBirth(); keepAwake();
-  queueSound(() => say('Geburtszeit erfasst.'));
-});
+function updateBanner(){
+  const show_ = !!banner && view === 'birth' && banner.uid === viewUid && Date.now() < banner.until;
+  $('#banner').hidden = !show_;
+  if (show_) setText($('#bannerText'), `${banner.m}. Minute vorbei – APGAR jetzt erheben`);
+}
 $('#undoBtn').addEventListener('click', () => {
   const b = byUid(viewUid); if (!b) return;
   b.bornAt = null; b.announced = {1:false, 5:false, 10:false}; save();
-  renderBirth();
+  banner = null; show('choice', b.uid);
 });
 $('#adjustBtn').addEventListener('click', () => {
   const b = byUid(viewUid); if (!b || !b.bornAt) return;
@@ -954,36 +714,17 @@ $('#adjustForm').addEventListener('submit', e => {
   for (const m of MS) b.announced[m] = b.announced[m] && el >= m * 60000;
   save(); renderBirth();
 });
-$('#backBtn').addEventListener('click', () => { stopListening(); show('start'); });
-function arm(btn, label, action){
-  if (btn.dataset.armed === '1'){ disarm(btn); action(); return; }
-  btn.dataset.armed = '1'; btn.dataset.label = btn.textContent; btn.textContent = label; btn.classList.add('armed');
-  clearTimeout(btn._t); btn._t = setTimeout(() => disarm(btn), 4000);
-}
-function disarm(btn){
-  if (btn.dataset.armed === '1') btn.textContent = btn.dataset.label;
-  btn.dataset.armed = ''; btn.classList.remove('armed'); clearTimeout(btn._t);
-}
+$('#backBtn').addEventListener('click', () => show('choice', viewUid));
 $('#closeBtn').addEventListener('click', e => {
-  const btn = e.currentTarget, b = byUid(viewUid); if (!b) return;
-  if (!b.bornAt){ arm(btn, 'Wirklich abbrechen?', () => { removeBirth(b.uid); show('start'); }); return; }
-  const open = MS.filter(m => !confirmed(b, m)).length;
-  arm(btn, open ? `${open} offen – trotzdem?` : 'Wirklich abschließen?', () => {
-    stopListening();
+  const b = byUid(viewUid); if (!b) return;
+  arm(e.currentTarget, 'Wirklich abschließen?', () => {
     b.closedAt = Date.now(); if (store.activeUid === b.uid) store.activeUid = null; save();
-    releaseWake(); show('summary', b.uid);
+    banner = null; releaseWake(); show('summary', b.uid);
   });
 });
-function updateBanner(){
-  const ban = $('#banner'), b = view === 'birth' ? byUid(viewUid) : null;
-  if (!b || !b.bornAt || b.closedAt){ ban.hidden = true; return; }
-  const el = Date.now() - b.bornAt, m = [...MS].reverse().find(x => el >= x * 60000 && !confirmed(b, x));
-  ban.hidden = !m;
-  if (m){ ban.dataset.m = m; setText($('#bannerText'), `${m}. Minute vorbei – APGAR jetzt erheben`); }
-}
-$('#banner').addEventListener('click', e => openCard($('#cardsBirth'), +e.currentTarget.dataset.m, true));
+$('#sosAfter').addEventListener('click', () => startEmergency('neugeborenes'));
 
-/* Meilensteine 1 / 5 / 10 Minuten */
+/* APGAR-Zeitpunkte 1 / 5 / 10 Minuten: nur Signal + Ansage */
 function checkMilestones(b, now){
   const el = now - b.bornAt; let hit = null, changed = false;
   for (const m of MS){
@@ -994,96 +735,27 @@ function checkMilestones(b, now){
   }
   if (!changed) return;
   save();
-  if (view === 'emergency'){                       // im Notfall nicht wegspringen, nur Signal + Hinweis
-    if (hit !== null){
-      setText($('#eApgarNote'), `APGAR ${minLabel(hit)} fällig (${fmtHMS(b.bornAt + hit * 60000)}). Nach dem Notfall nachtragen.`);
-      $('#eApgarNote').hidden = false;
-      queueSound(() => beep());
-    }
+  if (hit === null) return;
+  if (view === 'emergency'){                         // im Notfall nicht wegspringen, nur Signal + Hinweis
+    setText($('#eApgarNote'), `APGAR ${minLabel(hit)} fällig (${fmtHMS(b.bornAt + hit * 60000)}).`);
+    $('#eApgarNote').hidden = false;
+    queueSound(() => beep());
     return;
   }
-  if (hit !== null && (view !== 'birth' || viewUid !== b.uid)) show('birth', b.uid);
-  if (view === 'birth' && viewUid === b.uid){ updateCards($('#cardsBirth'), b); updateBanner(); }
-  if (hit !== null){
-    openCard($('#cardsBirth'), hit, true);
-    const app = $('#app'); app.classList.remove('alerting'); void app.offsetWidth; app.classList.add('alerting');
-    setTimeout(() => app.classList.remove('alerting'), 2200);
-    stopListening();
-    queueSound(async () => { await beep(); await wait(350); await say(ANSAGE(hit)); });
-  }
+  if (view !== 'birth' || viewUid !== b.uid) show('birth', b.uid);
+  banner = {uid: b.uid, m: hit, until: now + BANNER_MS};
+  updateBanner();
+  const app = $('#app'); app.classList.remove('alerting'); void app.offsetWidth; app.classList.add('alerting');
+  setTimeout(() => app.classList.remove('alerting'), 2200);
+  queueSound(async () => { await beep(); await wait(350); await say(ANSAGE(hit)); });
 }
 
-/* 3 · Protokoll */
-function protocolText(b){
-  const lines = ['BirthWatch – Protokoll', `Geburten-ID: ${b.gid}`, `Kreißsaal: ${b.room}`,
-    `Geburt: ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt) + ' Uhr' : '–'}`,
-    `APGAR (1/5/10 Min.): ${apgarLine(b)}`, ''];
-  for (const m of MS){
-    const s = b.apgar[m];
-    const parts = CRIT.map(c => `${c.name} ${s[c.k] != null ? s[c.k] : '–'}`).join(', ');
-    lines.push(`${String(m).padStart(2, ' ')} Min.: ${complete(s) ? total(s) + (b.doneAt[m] ? '' : ' (nicht bestätigt)') : 'unvollständig'} (${parts})${confirmed(b, m) ? ', bestätigt ' + fmtHMS(b.doneAt[m]) : ''}`);
-  }
-  const nf = b.notfall || [];
-  if (nf.length) lines.push('', ...nf.map(n => `Notfall (Neugeborenen-Reanimation): ${fmtHMS(n.start)} – ${n.end ? fmtHMS(n.end) + ' Uhr' : 'läuft'}`));
-  if (b.closedAt) lines.push('', `Abgeschlossen: ${fmtDate(b.closedAt)}, ${fmtHMS(b.closedAt)} Uhr`);
-  return lines.join('\n');
-}
-function renderSummaryData(b){
-  $('#sMeta').textContent = 'Geb.-ID ' + b.gid;
-  $('#sApgar').textContent = apgarLine(b);
-  $('#sId').textContent = b.gid;
-  $('#sRoom').textContent = 'Kreißsaal ' + b.room;
-  $('#sBorn').textContent = b.bornAt ? `${fmtLong(b.bornAt)}, ${fmtHMS(b.bornAt)} Uhr` : '–';
-  $('#sClosed').textContent = b.closedAt ? `${fmtDate(b.closedAt)}, ${fmtHMS(b.closedAt)} Uhr` : '–';
-  const nf = b.notfall || [];
-  $('#sSosL').hidden = $('#sSos').hidden = !nf.length;
-  $('#sSos').textContent = nf.map(n => `${fmtHMS(n.start)} – ${n.end ? fmtHMS(n.end) : 'läuft'}`).join(', ');
-  const tbl = $('#sTable'); tbl.textContent = '';
-  const thead = tbl.createTHead(), hr = thead.insertRow();
-  ['Kriterium', '1 Min.', '5 Min.', '10 Min.'].forEach(h => { const th = document.createElement('th'); th.scope = 'col'; th.textContent = h; hr.append(th); });
-  const tb = tbl.createTBody();
-  for (const c of CRIT){
-    const r = tb.insertRow(); r.insertCell().textContent = c.name;
-    for (const m of MS){ const v = b.apgar[m][c.k]; r.insertCell().textContent = v != null ? v : '–'; }
-  }
-  const tr = tb.insertRow(); tr.insertCell().textContent = 'bestätigt um';
-  for (const m of MS){ const td = tr.insertCell(); td.className = 't'; td.textContent = confirmed(b, m) ? fmtHMS(b.doneAt[m]).slice(0, 5) : '–'; }
-  const tf = tbl.createTFoot().insertRow(); tf.insertCell().textContent = 'Summe';
-  for (const m of MS) tf.insertCell().textContent = complete(b.apgar[m]) ? total(b.apgar[m]) : '–';
-  $('#protoText').textContent = protocolText(b);
-}
-function renderSummary(){
-  const b = byUid(viewUid); if (!b){ show('start'); return; }
-  renderSummaryData(b);
-  $('#copyMsg').textContent = '';
-  $('#cardsSummary').hidden = true; $('#editBtn').setAttribute('aria-expanded', 'false'); $('#editBtn').textContent = 'Werte bearbeiten';
-  buildCards($('#cardsSummary'), b);
-  disarm($('#deleteBtn'));
-}
-$('#copyBtn').addEventListener('click', () => {
-  const text = $('#protoText').textContent, msg = $('#copyMsg');
-  const fallback = () => {
-    const range = document.createRange(); range.selectNodeContents($('#protoText'));
-    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
-    msg.textContent = 'Text ist markiert. Jetzt mit „Kopieren“ übernehmen.';
-  };
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => { msg.textContent = 'Protokoll kopiert.'; }, fallback);
-    else fallback();
-  } catch (e) { fallback(); }
-});
-$('#editBtn').addEventListener('click', e => {
-  const open = $('#cardsSummary').hidden;
-  $('#cardsSummary').hidden = !open; e.currentTarget.setAttribute('aria-expanded', String(open));
-  e.currentTarget.textContent = open ? 'Fertig' : 'Werte bearbeiten';
-});
-$('#newBtn').addEventListener('click', () => { show('start'); gidIn.focus(); });
-$('#deleteBtn').addEventListener('click', e => {
-  const b = byUid(viewUid); if (!b) return;
-  arm(e.currentTarget, 'Wirklich löschen?', () => { removeBirth(b.uid); show('start'); });
-});
-
-/* ---------- Notfall: Neugeborenen-Reanimation (ERC-Leitlinie 2025, Gedächtnisstütze) ---------- */
+/* ---------- Notfall ---------- */
+// „bei der Geburt“: Inhalte folgen (mit der Klinik festlegen) · „nach der Geburt“: Neugeborenen-Reanimation, Gedächtnisstütze nach ERC 2025
+const ART = {
+  geburt: {meta: 'Notfall bei der Geburt', title: 'Notfall bei der Geburt', source: 'Maßnahmen werden noch mit der Klinik festgelegt.', speech: 'Notfall bei der Geburt. Die Zeit läuft.'},
+  neugeborenes: {meta: 'Notfall nach der Geburt', title: 'Neugeborenen-Reanimation', source: 'Gedächtnisstütze nach ERC-Leitlinie 2025. Klinikstandard und Ausbildung haben Vorrang.'},
+};
 const NOTFALL = [
   {t:'Hilfe rufen', d:['Hilfe rufen (Neonatologie / Kinderarzt).', 'Uhr läuft ab jetzt, Zeiten oben im Blick behalten.', 'Muss reanimiert werden: innerhalb von 30 s abnabeln.'],
    s:'Notfall. Neugeborenen-Reanimation. Hilfe rufen. Wenn reanimiert werden muss, innerhalb von dreißig Sekunden abnabeln.'},
@@ -1111,23 +783,18 @@ const NOTFALL = [
 const SPO2 = [[3, '3 Minuten', '70–75 %'], [5, '5 Minuten', '80–85 %'], [10, '10 Minuten', '85–95 %']];
 let eCycle = -1;
 const openNotfall = b => (b && (b.notfall || []).find(n => !n.end)) || null;
-function updateSos(){
-  const on = !!active() && (view === 'start' || view === 'birth');
-  $('#sosBar').hidden = !on;
-  document.body.classList.toggle('has-sos', on);
-}
-function startEmergency(){
+const artOf = n => (n && n.type === 'geburt') ? 'geburt' : 'neugeborenes';   // ältere Einträge ohne Typ = nach der Geburt
+function startEmergency(type){
   const a = active(); if (!a) return;
-  unlockAudio(); stopListening();
+  unlockAudio();
   if (!a.notfall) a.notfall = [];
   let n = openNotfall(a);
-  if (!n){ n = {start: Date.now(), end: null, step: 0}; a.notfall.push(n); }
+  if (!n){ n = {type, start: Date.now(), end: null, step: 0}; a.notfall.push(n); }
   save();
   show('emergency', a.uid);
   keepAwake();
-  say(NOTFALL[n.step].s);
+  say(artOf(n) === 'geburt' ? ART.geburt.speech : NOTFALL[n.step].s);
 }
-$('#sosBtn').addEventListener('click', startEmergency);
 function buildSteps(){
   const ol = $('#eSteps');
   NOTFALL.forEach((st, i) => {
@@ -1145,13 +812,20 @@ function buildSteps(){
 }
 function renderEmergency(){
   const b = byUid(viewUid), n = openNotfall(b);
-  if (!n){ show(b ? 'birth' : 'start', b ? b.uid : null); return; }
+  if (!n){ show(b ? (b.bornAt ? 'birth' : 'choice') : 'start', b ? b.uid : null); return; }
+  const art = artOf(n), nls = art === 'neugeborenes';
   if (!$('#eSteps').children.length) buildSteps();
-  $('#eMeta').textContent = `Geb.-ID ${b.gid} · Kreißsaal ${b.room}`;
+  setText($('#eMeta'), ART[art].meta);
+  setText($('#eTitle'), ART[art].title);
+  setText($('#eSource'), ART[art].source);
+  $('#ePlaceholder').hidden = nls;
+  $('#eNlsMain').hidden = !nls;
+  $('#eNlsSide').hidden = !nls;
+  $('#eGrid').classList.toggle('with-side', nls);
   $('#eApgarNote').hidden = true;
   disarm($('#eEndBtn'));
   eCycle = Math.floor((Date.now() - n.start) / 30000);
-  renderStep(n.step);
+  if (nls) renderStep(n.step);
 }
 function renderStep(i){
   const st = NOTFALL[i];
@@ -1171,7 +845,7 @@ function goStep(i){
   const n = openNotfall(byUid(viewUid)); if (!n) return;
   n.step = Math.max(0, Math.min(NOTFALL.length - 1, i)); save();
   renderStep(n.step); say(NOTFALL[n.step].s);
-  if (window.innerWidth < 900) $('.e-current').scrollIntoView({block: 'start'});
+  if (window.innerWidth < 900) $('#eNlsMain .e-current').scrollIntoView({block: 'start'});
 }
 $('#eNext').addEventListener('click', () => { const n = openNotfall(byUid(viewUid)); if (n) goStep(n.step + 1); });
 $('#ePrev').addEventListener('click', () => { const n = openNotfall(byUid(viewUid)); if (n) goStep(n.step - 1); });
@@ -1187,21 +861,68 @@ $('#eEndBtn').addEventListener('click', e => {
     const b = byUid(viewUid), n = openNotfall(b);
     if (n){ n.end = Date.now(); save(); }
     say('Notfall beendet. Die Zeiten stehen im Protokoll.');
-    show(b ? 'birth' : 'start', b ? b.uid : null);
+    show(b ? (b.bornAt ? 'birth' : 'choice') : 'start', b ? b.uid : null);
   });
 });
 function tickEmergency(now){
   const b = byUid(viewUid), n = openNotfall(b); if (!n) return;
-  const el = now - n.start, cyc = Math.floor(el / 30000);
+  const el = now - n.start;
   setText($('#eTimer'), fmtDur(el, true));
   setText($('#eSince'), b.bornAt ? fmtDur(now - b.bornAt, true) : '–');
   $('#eBornBtn').hidden = !!b.bornAt;
+  if (artOf(n) !== 'neugeborenes') return;
+  const cyc = Math.floor(el / 30000);
   $('#eCycleFill').style.transform = `scaleX(${(el % 30000) / 30000})`;
   setText($('#eCycleText'), `Nächste Herzfrequenz-Kontrolle in ${Math.ceil((30000 - el % 30000) / 1000)} s`);
   if (cyc > eCycle){ eCycle = cyc; if ($('#eTick').checked) beep(1, 880); }
   const mins = b.bornAt ? (now - b.bornAt) / 60000 : -1, cur = [...SPO2].reverse().find(([m]) => mins >= m);
   for (const tr of $$('#eSpo2 tr')) tr.classList.toggle('now', !!cur && +tr.dataset.m === cur[0]);
 }
+
+/* ---------- Protokoll ---------- */
+const notfallText = n => `${ART[artOf(n)].meta}: ${fmtHMS(n.start)} – ${n.end ? fmtHMS(n.end) + ' Uhr' : 'läuft'}`;
+const apgarZeiten = b => b.bornAt ? MS.map(m => `${m} Min. ${fmtHMS(b.bornAt + m * 60000)}`).join(' · ') : '–';
+function protocolText(b){
+  const lines = ['BirthWatch – Protokoll', `Geburten-ID: ${b.gid}`, `Kreißsaal: ${b.room}`,
+    `Geburt: ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt) + ' Uhr' : '–'}`,
+    `APGAR-Zeitpunkte (Signal): ${apgarZeiten(b)}`];
+  const nf = b.notfall || [];
+  if (nf.length) lines.push('', ...nf.map(notfallText));
+  if (b.closedAt) lines.push('', `Abgeschlossen: ${fmtDate(b.closedAt)}, ${fmtHMS(b.closedAt)} Uhr`);
+  return lines.join('\n');
+}
+function renderSummary(){
+  const b = byUid(viewUid); if (!b){ show('start'); return; }
+  $('#sMeta').textContent = 'Geb.-ID ' + b.gid;
+  $('#sId').textContent = b.gid;
+  $('#sRoom').textContent = 'Kreißsaal ' + b.room;
+  $('#sBorn').textContent = b.bornAt ? `${fmtLong(b.bornAt)}, ${fmtHMS(b.bornAt)} Uhr` : '–';
+  $('#sApgar').textContent = apgarZeiten(b);
+  $('#sClosed').textContent = b.closedAt ? `${fmtDate(b.closedAt)}, ${fmtHMS(b.closedAt)} Uhr` : '–';
+  const nf = b.notfall || [];
+  $('#sSosL').hidden = $('#sSos').hidden = !nf.length;
+  $('#sSos').textContent = nf.map(notfallText).join('\n');
+  $('#protoText').textContent = protocolText(b);
+  $('#copyMsg').textContent = '';
+  disarm($('#deleteBtn'));
+}
+$('#copyBtn').addEventListener('click', () => {
+  const text = $('#protoText').textContent, msg = $('#copyMsg');
+  const fallback = () => {
+    const range = document.createRange(); range.selectNodeContents($('#protoText'));
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    msg.textContent = 'Text ist markiert. Jetzt mit „Kopieren“ übernehmen.';
+  };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => { msg.textContent = 'Protokoll kopiert.'; }, fallback);
+    else fallback();
+  } catch (e) { fallback(); }
+});
+$('#newBtn').addEventListener('click', () => { show('start'); gidIn.focus(); });
+$('#deleteBtn').addEventListener('click', e => {
+  const b = byUid(viewUid); if (!b) return;
+  arm(e.currentTarget, 'Wirklich löschen?', () => { removeBirth(b.uid); show('start'); });
+});
 
 /* ---------- Takt ---------- */
 let lastSec = -1;
@@ -1215,10 +936,10 @@ function tick(){
       lastSec = sec;
       const t = fmtHMS(now);
       setText($('#date'), fmtLong(now)); setText($('#hm'), t.slice(0, 5)); setText($('#ss'), t.slice(6));
+      updateBanner();
     }
     if (b && b.bornAt){
       const el = now - b.bornAt;
-      setText($('#bStatus'), b.closedAt ? 'Abgeschlossen' : 'Läuft');
       const timer = $('#timer'); setText(timer, fmtDur(el, true)); timer.classList.toggle('long', el >= 3600000);
       const next = MS.find(m => el < m * 60000), prev = next ? (MS[MS.indexOf(next) - 1] || 0) : 10;
       const frac = next ? (el - prev * 60000) / ((next - prev) * 60000) : 1;
@@ -1226,11 +947,13 @@ function tick(){
       $('#barFill').parentElement.setAttribute('aria-valuenow', String(Math.round(frac * 100)));
       setText($('#nextLine'), next ? `Nächste Bewertung: ${minLabel(next)} · um ${fmtHMS(b.bornAt + next * 60000)} · in ${fmtDur(next * 60000 - el)}`
                                    : 'Alle drei Bewertungszeitpunkte erreicht. Der Timer läuft weiter.');
-      $('#undoBtn').hidden = !(el < 60000 && !MS.some(m => count(b.apgar[m])));
-    } else if (b){
-      setText($('#bStatus'), 'Wartet auf Geburt');
+      $('#undoBtn').hidden = !(el < 60000);
     }
     $('#soundNote').hidden = !(b && b.bornAt && !b.closedAt && (!actx || actx.state !== 'running'));
+  }
+  if (view === 'choice'){
+    const b = byUid(viewUid);
+    if (b) setText($('#choiceBirthSub'), b.bornAt ? `läuft seit ${fmtDur(now - b.bornAt)}` : 'Uhrzeit wird beim Antippen vermerkt');
   }
   if (view === 'emergency') tickEmergency(now);
   if (view === 'start' && a){
@@ -1254,7 +977,7 @@ syncThemeBtn();
 if (document.querySelector('link[rel="manifest"]')){
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   $('#installHint').hidden = standalone;
-  if ('serviceWorker' in navigator){
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
     let wantReload = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => { if (wantReload) location.reload(); });
     navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -1277,7 +1000,9 @@ document.addEventListener('keydown', () => unlockAudio());
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible'){ if (active()) keepAwake(); tick(); } });
 load();
 const a0 = active();
-if (a0 && openNotfall(a0)) show('emergency', a0.uid); else if (a0) show('birth', a0.uid); else show('start');
+if (a0 && openNotfall(a0)) show('emergency', a0.uid);
+else if (a0) show(a0.bornAt ? 'birth' : 'choice', a0.uid);
+else show('start');
 setInterval(tick, 250);
 })();
 </script>
