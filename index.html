@@ -19,7 +19,7 @@
 <title>BirthWatch</title>
 <meta name="theme-color" content="#5d7cf7">
 <style>
-/* Ablauf nach Handskizze (12.10.2026): 1 Daten eingeben → 2 nur „Geburt“ / „Notfall“ → 3 „Seit Geburt“ mit Balken,
+/* Ablauf (Handskizze 12.10., ohne Dateneingabe seit 15.10.2026): Start = nur „Geburt“ / „Notfall“ → „Seit Geburt“ mit Balken,
    APGAR nur als Signal + Ansage nach 1/5/10 Min. Look: Himmelblau-Verlauf, fast schwarze Schrift, Pillen-Buttons. */
 :root{
   --sky-top:#5d7cf7; --sky-bottom:#8a96f5;
@@ -116,36 +116,13 @@ h2{margin:0;font-size:21px;font-weight:800;letter-spacing:-.01em}
   letter-spacing:.02em;cursor:pointer;touch-action:manipulation}
 .sos svg{width:24px;height:24px}
 
-/* 1 · Formular */
+/* Startseite + Verlauf */
 .panel{background:var(--panel);color:var(--panel-ink);border:1px solid var(--panel-edge);border-radius:24px;padding:20px}
-.form{display:flex;flex-direction:column;gap:20px}
 .label{display:block;margin:0 0 6px;font-size:15px;font-weight:700;color:var(--panel-mute)}
 .label-ink{display:block;font-size:15px;font-weight:700;color:var(--ink-2)}
-.field{width:100%;background:transparent;border:0;border-bottom:2px solid var(--panel-rule);border-radius:0;color:var(--panel-ink);
-  font:700 30px/1.2 var(--font);letter-spacing:.01em;padding:6px 0 10px}
-.field::placeholder{color:var(--panel-mute);opacity:.55;font-weight:600}
-.field:focus{outline:none;border-bottom-color:var(--pick)}
 .hint{margin:0;font-size:14px;color:var(--panel-mute)}
-.warn{margin:8px 0 0;padding:10px 12px;border-radius:12px;font-size:14px;background:var(--warn-bg);color:var(--warn-ink)}
-fieldset{border:0;margin:0;padding:0;min-width:0}
-.rooms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.room{position:relative}
-.room input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
-.room label{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:80px;
-  border:2px solid var(--panel-rule);border-radius:18px;font-weight:800;font-size:32px;line-height:1;cursor:pointer;touch-action:manipulation}
-.room label small{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--panel-mute)}
-.room input:checked + label{background:var(--pick);border-color:var(--pick);color:var(--pick-ink)}
-.room input:checked + label small{color:var(--pick-ink)}
-.room input:focus-visible + label{outline:3px solid var(--focus);outline-offset:3px}
-
-.start-grid{display:grid;gap:24px}
-@media (min-width:900px){.start-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start}}
 .resume{display:flex;flex-direction:column;gap:6px;border-color:var(--due)}
 .resume-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.resume-info{display:flex;flex-direction:column;min-width:0}
-.resume-info strong{font-size:24px;font-weight:800;overflow-wrap:anywhere}
-.resume-info span{font-size:14px;color:var(--panel-mute);font-variant-numeric:tabular-nums}
-.history{display:flex;flex-direction:column;gap:12px}
 .hist-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .hist{appearance:none;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;text-align:left;
   padding:12px 16px;border-radius:18px;border:2px solid var(--rule);background:transparent;color:var(--ink);cursor:pointer}
@@ -157,7 +134,6 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
 /* 2 · Geburt oder Notfall */
 .wrap{width:100%;max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-.choice-meta{margin:0;font-size:15px;font-weight:600;color:var(--ink-2);text-align:center;overflow-wrap:anywhere}
 .choice{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .tile{appearance:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:clamp(200px,52vw,360px);
   padding:20px 12px;border-radius:28px;text-align:center;cursor:pointer;touch-action:manipulation;transition:transform .08s ease}
@@ -246,77 +222,40 @@ body.alarm{--sky-top:var(--alarm-top);--sky-bottom:var(--alarm-bottom);--ink:var
   </header>
 
   <main>
-    <!-- 1 · Daten eingeben -->
-    <section id="screen-start" class="screen" aria-labelledby="startTitle">
-      <div class="meta-row"><span>Neue Geburt</span><span class="status">Bereit</span></div>
-      <h1 id="startTitle">Geburt anlegen</h1>
-
-      <div class="start-grid">
-        <div class="stack">
-          <div id="updateBox" class="panel resume" hidden>
-            <span class="label">Neue Version verfügbar</span>
-            <div class="resume-row">
-              <span class="hint">Gespeicherte Geburten bleiben erhalten.</span>
-              <button type="button" id="updateBtn" class="btn btn-pick">Jetzt aktualisieren</button>
-            </div>
-          </div>
-
-          <div id="resumeBox" class="panel resume" hidden>
-            <span class="label">Laufende Geburt</span>
-            <div class="resume-row">
-              <div class="resume-info"><strong id="resumeId"></strong><span id="resumeMeta"></span></div>
-              <button type="button" id="resumeBtn" class="btn btn-pick">Fortsetzen</button>
-            </div>
-          </div>
-
-          <form id="startForm" class="panel form" novalidate autocomplete="off">
-            <div>
-              <label class="label" for="gid">Geburten-ID</label>
-              <input id="gid" name="gid" class="field" type="text" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="24" placeholder="z. B. 26-0412" required>
-              <p id="gidWarn" class="warn" hidden>Das sieht nach einem Namen aus. Bitte nur die interne Geburten-ID eintragen.</p>
-            </div>
-            <fieldset>
-              <legend class="label">Kreißsaal</legend>
-              <div class="rooms">
-                <div class="room"><input type="radio" name="room" id="room1" value="1"><label for="room1"><small>Saal</small>1</label></div>
-                <div class="room"><input type="radio" name="room" id="room2" value="2"><label for="room2"><small>Saal</small>2</label></div>
-                <div class="room"><input type="radio" name="room" id="room3" value="3"><label for="room3"><small>Saal</small>3</label></div>
-                <div class="room"><input type="radio" name="room" id="room4" value="4"><label for="room4"><small>Saal</small>4</label></div>
-              </div>
-            </fieldset>
-            <p class="hint">Keine Namen oder Geburtsdaten der Mutter. Alle Angaben bleiben auf diesem Gerät.</p>
-            <p id="replaceNote" class="warn" hidden>Die laufende Geburt <b id="replaceId"></b> wird beim Start abgeschlossen.</p>
-          </form>
-
-          <button type="submit" form="startForm" id="startBtn" class="btn btn-primary btn-wide" disabled>Geburtsvorgang starten</button>
-          <button type="button" id="testBtn" class="btn btn-outline btn-wide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>Ton &amp; Ansage testen</button>
-          <p id="testMsg" class="note" aria-live="polite"></p>
-          <p id="installHint" class="note" hidden>Ohne Internet nutzen: In Safari auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen (Android: Chrome-Menü → „App installieren“). Danach BirthWatch immer über das neue Symbol öffnen.</p>
-          <p id="offlineNote" class="note" hidden>Offline bereit: BirthWatch läuft auf diesem Gerät auch ohne Internet.</p>
-        </div>
-
-        <section class="history" aria-labelledby="histTitle">
-          <h2 id="histTitle">Auf diesem Gerät</h2>
-          <ul id="historyList" class="hist-list"></ul>
-          <p id="historyEmpty" class="note">Noch keine Geburten gespeichert.</p>
-          <p class="note">Abgeschlossene Geburten werden nach 7 Tagen automatisch gelöscht.</p>
-        </section>
-      </div>
-    </section>
-
-    <!-- 2 · Geburt oder Notfall -->
-    <section id="screen-choice" class="screen" aria-labelledby="cTitle" hidden>
+    <!-- Start: Geburt oder Notfall -->
+    <section id="screen-choice" class="screen" aria-labelledby="cTitle">
       <div class="wrap">
         <h1 id="cTitle" class="sr-only">Geburt oder Notfall</h1>
-        <p id="cMeta" class="choice-meta"></p>
+        <div id="updateBox" class="panel resume" hidden>
+          <span class="label">Neue Version verfügbar</span>
+          <div class="resume-row">
+            <span class="hint">Gespeicherte Geburten bleiben erhalten.</span>
+            <button type="button" id="updateBtn" class="btn btn-pick">Jetzt aktualisieren</button>
+          </div>
+        </div>
         <div class="choice">
           <button type="button" id="choiceBirth" class="tile tile-birth"><span class="tile-label">Geburt</span><span id="choiceBirthSub" class="tile-sub">Uhrzeit wird beim Antippen vermerkt</span></button>
           <button type="button" id="choiceSos" class="tile tile-sos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20.5h20L12 3z"/><path d="M12 10v4.5M12 17.5v.5"/></svg><span class="tile-label">Notfall</span></button>
         </div>
         <div class="actions">
-          <button type="button" id="cBack" class="btn btn-outline">Zurück</button>
-          <button type="button" id="cCancel" class="btn btn-outline">Abbrechen</button>
+          <button type="button" id="testBtn" class="btn btn-outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>Ton testen</button>
+          <button type="button" id="historyBtn" class="btn btn-outline">Verlauf</button>
         </div>
+        <button type="button" id="cClose" class="btn btn-outline btn-wide" hidden>Ohne Geburtszeit abschließen</button>
+        <p id="testMsg" class="note" aria-live="polite"></p>
+        <p id="installHint" class="note" hidden>Ohne Internet nutzen: In Safari auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen (Android: Chrome-Menü → „App installieren“). Danach BirthWatch immer über das neue Symbol öffnen.</p>
+        <p id="offlineNote" class="note" hidden>Offline bereit: BirthWatch läuft auf diesem Gerät auch ohne Internet.</p>
+      </div>
+    </section>
+
+    <!-- Verlauf -->
+    <section id="screen-history" class="screen" aria-labelledby="hTitle" hidden>
+      <div class="wrap">
+        <h1 id="hTitle">Verlauf</h1>
+        <ul id="historyList" class="hist-list"></ul>
+        <p id="historyEmpty" class="note">Noch keine Geburten gespeichert.</p>
+        <p class="note">Abgeschlossene Geburten werden nach 7 Tagen automatisch gelöscht. Alle Daten bleiben auf diesem Gerät.</p>
+        <button type="button" id="hBack" class="btn btn-outline btn-wide">Zurück</button>
       </div>
     </section>
 
@@ -417,8 +356,8 @@ body.alarm{--sky-top:var(--alarm-top);--sky-bottom:var(--alarm-bottom);--ink:var
       <div class="sum-grid">
         <div class="panel">
           <dl class="kv">
-            <dt>Geburten-ID</dt><dd id="sId"></dd>
-            <dt>Kreißsaal</dt><dd id="sRoom"></dd>
+            <dt id="sIdL">Geburten-ID</dt><dd id="sId"></dd>
+            <dt id="sRoomL">Kreißsaal</dt><dd id="sRoom"></dd>
             <dt>Geburt</dt><dd id="sBorn"></dd>
             <dt>APGAR-Zeitpunkte</dt><dd id="sApgar"></dd>
             <dt>Abgeschlossen</dt><dd id="sClosed"></dd>
@@ -470,10 +409,13 @@ function load(){
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
 const byUid = uid => store.births.find(b => b.uid === uid) || null;
 const active = () => { const b = store.activeUid && byUid(store.activeUid); return b && !b.closedAt ? b : null; };
-function newBirth(gid, room){
-  return {uid: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), gid, room, createdAt: Date.now(),
+function newBirth(){
+  return {uid: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), gid: null, room: null, createdAt: Date.now(),
     bornAt: null, closedAt: null, announced: {1:false, 5:false, 10:false}, notfall: []};
 }
+// Keine Patientendaten mehr: eine Geburt heißt nach ihrer Uhrzeit (ältere Einträge haben noch ID + Kreißsaal)
+const titel = b => b.gid ? `${b.gid} · Kreißsaal ${b.room}`
+  : b.bornAt ? `Geburt ${fmtDate(b.bornAt)}, ${fmtHMS(b.bornAt).slice(0, 5)} Uhr` : `Angelegt ${fmtDate(b.createdAt)}, ${fmtHMS(b.createdAt).slice(0, 5)} Uhr`;
 function removeBirth(uid){
   store.births = store.births.filter(b => b.uid !== uid);
   if (store.activeUid === uid) store.activeUid = null;
@@ -578,12 +520,12 @@ function disarm(btn){
 }
 
 /* ---------- Ansichten ---------- */
-let view = 'start', viewUid = null;
+let view = 'choice', viewUid = null;
 function show(name, uid){
   view = name; viewUid = uid || null;
   for (const s of $$('.screen')) s.hidden = s.id !== 'screen-' + name;
   document.body.classList.toggle('alarm', name === 'emergency');
-  if (name === 'start') renderStart();
+  if (name === 'history') renderHistory();
   if (name === 'choice') renderChoice();
   if (name === 'birth') renderBirth();
   if (name === 'emergency') renderEmergency();
@@ -592,55 +534,36 @@ function show(name, uid){
   tick();
 }
 
-/* 1 · Daten eingeben */
-const gidIn = $('#gid');
-function validateStart(){
-  const v = gidIn.value.trim();
-  $('#gidWarn').hidden = !(/[a-zäöüß]{2,}\s+[a-zäöüß]{2,}/i.test(v) || v.includes('@'));
-  $('#startBtn').disabled = !(v && $('input[name=room]:checked'));
+/* Start: Geburt oder Notfall */
+function ensureBirth(){
+  let b = active();
+  if (!b){ b = newBirth(); store.births.push(b); store.activeUid = b.uid; save(); }
+  return b;
 }
-function renderStart(){
+function renderChoice(){
   const a = active();
-  $('#resumeBox').hidden = !a;
-  $('#replaceNote').hidden = !a;
-  if (a){ $('#resumeId').textContent = a.gid; $('#replaceId').textContent = a.gid; }
-  renderHistory();
-  validateStart();
+  viewUid = a ? a.uid : null;
+  $('#cClose').hidden = !(a && !a.bornAt);          // z. B. nur Notfall dokumentiert, Geburt nicht vermerkt
+  disarm($('#cClose'));
 }
-function renderHistory(){
-  const ul = $('#historyList'), list = store.births.slice().reverse();
-  ul.textContent = '';
-  $('#historyEmpty').hidden = list.length > 0;
-  for (const b of list){
-    const li = document.createElement('li'), btn = document.createElement('button'), running = !b.closedAt;
-    btn.type = 'button'; btn.className = 'hist'; btn.dataset.uid = b.uid;
-    const id = document.createElement('span'); id.className = 'hist-id'; id.textContent = b.gid;
-    const meta = document.createElement('span'); meta.className = 'hist-meta';
-    meta.textContent = `Kreißsaal ${b.room} · ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt).slice(0, 5) + ' Uhr' : 'vor der Geburt'}`;
-    const chip = document.createElement('span'); chip.className = 'chip' + (running ? ' chip-due' : ''); chip.textContent = running ? 'läuft' : 'abgeschlossen';
-    btn.append(id, meta, chip); li.append(btn); ul.append(li);
-  }
-}
-gidIn.addEventListener('input', validateStart);
-$$('input[name=room]').forEach(r => r.addEventListener('change', validateStart));
-$('#startForm').addEventListener('submit', e => {
-  e.preventDefault();
-  validateStart();
-  if ($('#startBtn').disabled) return;
+$('#choiceBirth').addEventListener('click', () => {
+  const t = Date.now();
   unlockAudio();
-  const a = active();
-  if (a){ if (a.bornAt) a.closedAt = Date.now(); else removeBirth(a.uid); }
-  const b = newBirth(gidIn.value.trim(), $('input[name=room]:checked').value);
-  store.births.push(b); store.activeUid = b.uid; save();
-  gidIn.value = ''; $$('input[name=room]').forEach(r => { r.checked = false; });
+  const b = ensureBirth();
+  if (!b.bornAt){
+    b.bornAt = t; b.announced = {1:false, 5:false, 10:false}; save();
+    queueSound(() => say('Geburtszeit erfasst.'));
+  }
   keepAwake();
-  show('choice', b.uid);
+  show('birth', b.uid);
 });
-$('#resumeBtn').addEventListener('click', () => { const a = active(); if (a){ unlockAudio(); keepAwake(); show(a.bornAt ? 'birth' : 'choice', a.uid); } });
-$('#historyList').addEventListener('click', e => {
-  const btn = e.target.closest('.hist'); if (!btn) return;
-  const b = byUid(btn.dataset.uid); if (!b) return;
-  show(b.closedAt ? 'summary' : (b.bornAt ? 'birth' : 'choice'), b.uid);
+$('#choiceSos').addEventListener('click', () => startEmergency('geburt'));
+$('#cClose').addEventListener('click', e => {
+  const b = active(); if (!b) return;
+  arm(e.currentTarget, 'Wirklich abschließen?', () => {
+    b.closedAt = Date.now(); store.activeUid = null; save();
+    releaseWake(); show('summary', b.uid);
+  });
 });
 $('#testBtn').addEventListener('click', () => {
   unlockAudio();
@@ -651,35 +574,34 @@ $('#testBtn').addEventListener('click', () => {
   queueSound(async () => { await beep(); await wait(300); await say('Ton und Ansage funktionieren.'); });
 });
 
-/* 2 · Geburt oder Notfall */
-function renderChoice(){
-  const b = byUid(viewUid); if (!b){ show('start'); return; }
-  setText($('#cMeta'), `${b.gid} · Kreißsaal ${b.room}`);
-  $('#cCancel').hidden = !!b.bornAt;              // eine vermerkte Geburt wird nicht über „Abbrechen“ gelöscht
-  disarm($('#cCancel'));
-}
-$('#choiceBirth').addEventListener('click', () => {
-  const t = Date.now(), b = byUid(viewUid); if (!b) return;
-  unlockAudio();
-  if (!b.bornAt){
-    b.bornAt = t; b.announced = {1:false, 5:false, 10:false};
-    store.activeUid = b.uid; save();
-    queueSound(() => say('Geburtszeit erfasst.'));
+/* Verlauf */
+function renderHistory(){
+  const ul = $('#historyList'), list = store.births.slice().reverse();
+  ul.textContent = '';
+  $('#historyEmpty').hidden = list.length > 0;
+  for (const b of list){
+    const li = document.createElement('li'), btn = document.createElement('button'), running = !b.closedAt;
+    btn.type = 'button'; btn.className = 'hist'; btn.dataset.uid = b.uid;
+    const id = document.createElement('span'); id.className = 'hist-id'; id.textContent = titel(b);
+    const meta = document.createElement('span'); meta.className = 'hist-meta';
+    const nf = (b.notfall || []).length;
+    meta.textContent = (b.bornAt ? 'Geburt ' + fmtHMS(b.bornAt) + ' Uhr' : 'ohne Geburtszeit') + (nf ? ` · ${nf} Notfall` : '');
+    const chip = document.createElement('span'); chip.className = 'chip' + (running ? ' chip-due' : ''); chip.textContent = running ? 'läuft' : 'abgeschlossen';
+    btn.append(id, meta, chip); li.append(btn); ul.append(li);
   }
-  keepAwake();
-  show('birth', b.uid);
-});
-$('#choiceSos').addEventListener('click', () => startEmergency('geburt'));
-$('#cBack').addEventListener('click', () => show('start'));
-$('#cCancel').addEventListener('click', e => {
-  const b = byUid(viewUid); if (!b) return;
-  arm(e.currentTarget, 'Wirklich abbrechen?', () => { removeBirth(b.uid); show('start'); });
+}
+$('#historyBtn').addEventListener('click', () => show('history'));
+$('#hBack').addEventListener('click', () => show('choice'));
+$('#historyList').addEventListener('click', e => {
+  const btn = e.target.closest('.hist'); if (!btn) return;
+  const b = byUid(btn.dataset.uid); if (!b) return;
+  show(b.closedAt ? 'summary' : (b.bornAt ? 'birth' : 'choice'), b.uid);
 });
 
 /* 3 · Seit Geburt */
 let banner = null;   // {uid, m, until}
 function renderBirth(){
-  const b = byUid(viewUid); if (!b){ show('start'); return; }
+  const b = byUid(viewUid); if (!b){ show('choice'); return; }
   if (!b.bornAt){ show('choice', b.uid); return; }
   $('#bornDate').textContent = fmtDate(b.bornAt);
   $('#bornAt').textContent = fmtHMS(b.bornAt);
@@ -785,8 +707,8 @@ let eCycle = -1;
 const openNotfall = b => (b && (b.notfall || []).find(n => !n.end)) || null;
 const artOf = n => (n && n.type === 'geburt') ? 'geburt' : 'neugeborenes';   // ältere Einträge ohne Typ = nach der Geburt
 function startEmergency(type){
-  const a = active(); if (!a) return;
   unlockAudio();
+  const a = ensureBirth();
   if (!a.notfall) a.notfall = [];
   let n = openNotfall(a);
   if (!n){ n = {type, start: Date.now(), end: null, step: 0}; a.notfall.push(n); }
@@ -812,7 +734,7 @@ function buildSteps(){
 }
 function renderEmergency(){
   const b = byUid(viewUid), n = openNotfall(b);
-  if (!n){ show(b ? (b.bornAt ? 'birth' : 'choice') : 'start', b ? b.uid : null); return; }
+  if (!n){ show(b && b.bornAt ? 'birth' : 'choice', b ? b.uid : null); return; }
   const art = artOf(n), nls = art === 'neugeborenes';
   if (!$('#eSteps').children.length) buildSteps();
   setText($('#eMeta'), ART[art].meta);
@@ -861,7 +783,7 @@ $('#eEndBtn').addEventListener('click', e => {
     const b = byUid(viewUid), n = openNotfall(b);
     if (n){ n.end = Date.now(); save(); }
     say('Notfall beendet. Die Zeiten stehen im Protokoll.');
-    show(b ? (b.bornAt ? 'birth' : 'choice') : 'start', b ? b.uid : null);
+    show(b && b.bornAt ? 'birth' : 'choice', b ? b.uid : null);
   });
 });
 function tickEmergency(now){
@@ -883,19 +805,21 @@ function tickEmergency(now){
 const notfallText = n => `${ART[artOf(n)].meta}: ${fmtHMS(n.start)} – ${n.end ? fmtHMS(n.end) + ' Uhr' : 'läuft'}`;
 const apgarZeiten = b => b.bornAt ? MS.map(m => `${m} Min. ${fmtHMS(b.bornAt + m * 60000)}`).join(' · ') : '–';
 function protocolText(b){
-  const lines = ['BirthWatch – Protokoll', `Geburten-ID: ${b.gid}`, `Kreißsaal: ${b.room}`,
-    `Geburt: ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt) + ' Uhr' : '–'}`,
-    `APGAR-Zeitpunkte (Signal): ${apgarZeiten(b)}`];
+  const lines = ['BirthWatch – Protokoll'];
+  if (b.gid) lines.push(`Geburten-ID: ${b.gid}`, `Kreißsaal: ${b.room}`);
+  lines.push(`Geburt: ${b.bornAt ? fmtDate(b.bornAt) + ', ' + fmtHMS(b.bornAt) + ' Uhr' : '–'}`,
+    `APGAR-Zeitpunkte (Signal): ${apgarZeiten(b)}`);
   const nf = b.notfall || [];
   if (nf.length) lines.push('', ...nf.map(notfallText));
   if (b.closedAt) lines.push('', `Abgeschlossen: ${fmtDate(b.closedAt)}, ${fmtHMS(b.closedAt)} Uhr`);
   return lines.join('\n');
 }
 function renderSummary(){
-  const b = byUid(viewUid); if (!b){ show('start'); return; }
-  $('#sMeta').textContent = 'Geb.-ID ' + b.gid;
-  $('#sId').textContent = b.gid;
-  $('#sRoom').textContent = 'Kreißsaal ' + b.room;
+  const b = byUid(viewUid); if (!b){ show('choice'); return; }
+  $('#sMeta').textContent = titel(b);
+  $('#sIdL').hidden = $('#sId').hidden = $('#sRoomL').hidden = $('#sRoom').hidden = !b.gid;
+  $('#sId').textContent = b.gid || '';
+  $('#sRoom').textContent = b.room ? 'Kreißsaal ' + b.room : '';
   $('#sBorn').textContent = b.bornAt ? `${fmtLong(b.bornAt)}, ${fmtHMS(b.bornAt)} Uhr` : '–';
   $('#sApgar').textContent = apgarZeiten(b);
   $('#sClosed').textContent = b.closedAt ? `${fmtDate(b.closedAt)}, ${fmtHMS(b.closedAt)} Uhr` : '–';
@@ -918,10 +842,10 @@ $('#copyBtn').addEventListener('click', () => {
     else fallback();
   } catch (e) { fallback(); }
 });
-$('#newBtn').addEventListener('click', () => { show('start'); gidIn.focus(); });
+$('#newBtn').addEventListener('click', () => show('choice'));
 $('#deleteBtn').addEventListener('click', e => {
   const b = byUid(viewUid); if (!b) return;
-  arm(e.currentTarget, 'Wirklich löschen?', () => { removeBirth(b.uid); show('start'); });
+  arm(e.currentTarget, 'Wirklich löschen?', () => { removeBirth(b.uid); show('choice'); });
 });
 
 /* ---------- Takt ---------- */
@@ -952,13 +876,9 @@ function tick(){
     $('#soundNote').hidden = !(b && b.bornAt && !b.closedAt && (!actx || actx.state !== 'running'));
   }
   if (view === 'choice'){
-    const b = byUid(viewUid);
-    if (b) setText($('#choiceBirthSub'), b.bornAt ? `läuft seit ${fmtDur(now - b.bornAt)}` : 'Uhrzeit wird beim Antippen vermerkt');
+    setText($('#choiceBirthSub'), a && a.bornAt ? `läuft seit ${fmtDur(now - a.bornAt)}` : 'Uhrzeit wird beim Antippen vermerkt');
   }
   if (view === 'emergency') tickEmergency(now);
-  if (view === 'start' && a){
-    setText($('#resumeMeta'), `Kreißsaal ${a.room} · ` + (a.bornAt ? 'seit Geburt ' + fmtDur(now - a.bornAt) : 'wartet auf Geburt'));
-  }
 }
 
 /* ---------- Nachtmodus ---------- */
@@ -1001,8 +921,8 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 load();
 const a0 = active();
 if (a0 && openNotfall(a0)) show('emergency', a0.uid);
-else if (a0) show(a0.bornAt ? 'birth' : 'choice', a0.uid);
-else show('start');
+else if (a0 && a0.bornAt) show('birth', a0.uid);
+else show('choice');
 setInterval(tick, 250);
 })();
 </script>
